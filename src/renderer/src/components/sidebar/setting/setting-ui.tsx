@@ -31,11 +31,11 @@ interface SettingUIProps {
 
 function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
   const { t } = useTranslation();
-  const [saveHandlers, setSaveHandlers] = useState<(() => void)[]>([]);
+  const [saveHandlers, setSaveHandlers] = useState<(() => boolean | void | Promise<boolean | void>)[]>([]);
   const [cancelHandlers, setCancelHandlers] = useState<(() => void)[]>([]);
   const [activeTab, setActiveTab] = useState('general');
 
-  const handleSaveCallback = useCallback((handler: () => void) => {
+  const handleSaveCallback = useCallback((handler: () => boolean | void | Promise<boolean | void>) => {
     setSaveHandlers((prev) => [...prev, handler]);
     return (): void => {
       setSaveHandlers((prev) => prev.filter((h) => h !== handler));
@@ -49,9 +49,22 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
     };
   }, []);
 
-  const handleSave = useCallback((): void => {
-    saveHandlers.forEach((handler) => handler());
-    onClose();
+  const handleSave = useCallback(async (): Promise<void> => {
+    let hasError = false;
+    for (const handler of saveHandlers) {
+      try {
+        const result = await handler();
+        if (result === false) {
+          hasError = true;
+        }
+      } catch (error) {
+        console.error('Settings save handler failed', error);
+        hasError = true;
+      }
+    }
+    if (!hasError) {
+      onClose();
+    }
   }, [saveHandlers, onClose]);
 
   const handleCancel = useCallback((): void => {
@@ -167,7 +180,7 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
           <Button colorPalette="red" onClick={handleCancel}>
             {t('common.cancel')}
           </Button>
-          <Button colorPalette="blue" onClick={handleSave}>
+          <Button colorPalette="blue" onClick={() => { void handleSave(); }}>
             {t('common.save')}
           </Button>
         </DrawerFooter>
