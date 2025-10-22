@@ -180,7 +180,7 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
           <Button colorPalette="red" onClick={handleCancel}>
             {t('common.cancel')}
           </Button>
-          <Button colorPalette="blue" onClick={() => { void handleSave(); }}>
+          <Button colorPalette="blue" onClick={handleSave}>
             {t('common.save')}
           </Button>
         </DrawerFooter>
