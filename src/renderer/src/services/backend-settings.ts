@@ -1,115 +1,57 @@
-import {
-  DEFAULT_BACKEND_BASE_URL,
-  DEFAULT_BACKEND_WS_URL,
-  DEFAULT_BASIC_AUTH_USERNAME,
-  DEFAULT_BASIC_AUTH_PASSWORD,
-} from '@/constants/backend';
+import { BasicAuthConfig, buildAuthorizationHeader, getBackendConfig } from '@/services/backend-settings';
+import { notifyAuthFailure, notifyAuthRecovered } from '@/services/auth-notifier';
 
-export interface BasicAuthConfig {
-  enabled: boolean;
-  username: string;
-  password: string;
+interface AuthorizedFetchOptions extends RequestInit {
+  useAuth?: boolean;
+  baseUrlOverride?: string;
+  authOverride?: BasicAuthConfig;
 }
 
-export interface BackendConfig {
-  baseUrl: string;
-  wsUrl: string;
-  basicAuth: BasicAuthConfig;
-}
-
-let currentConfig: BackendConfig = {
-  baseUrl: DEFAULT_BACKEND_BASE_URL,
-  wsUrl: DEFAULT_BACKEND_WS_URL,
-  basicAuth: {
-    enabled: false,
-    username: DEFAULT_BASIC_AUTH_USERNAME,
-    password: DEFAULT_BASIC_AUTH_PASSWORD,
-  },
-};
-
-export const normalizeHttpOrigin = (value: string): string => {
-  if (/^ws:\/\//i.test(value)) {
-    return value.replace(/^ws:\/\//i, 'http://');
-  }
-  if (/^wss:\/\//i.test(value)) {
-    return value.replace(/^wss:\/\//i, 'https://');
-  }
-  return value;
-};
-
-const encodeCredentials = (username: string, password: string): string => {
-  const raw = `${username}:${password}`;
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(raw, 'utf-8').toString('base64');
-  }
-  if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
-    const utf8 = encodeURIComponent(raw).replace(/%([0-9A-F]{2})/g, (_, p1) =>
-      String.fromCharCode(Number.parseInt(p1, 16)),
-    );
-    return window.btoa(utf8);
-  }
-  throw new Error('No base64 encoder available');
-};
-
-export const updateBackendConfig = (partial: Partial<Omit<BackendConfig, 'basicAuth'>> & {
-  basicAuth?: Partial<BasicAuthConfig>
-}) => {
-  const nextBase = partial.baseUrl !== undefined
-    ? normalizeHttpOrigin(partial.baseUrl)
-    : currentConfig.baseUrl;
-  currentConfig = {
-    ...currentConfig,
-    ...partial,
-    baseUrl: nextBase,
-    basicAuth: {
-      ...currentConfig.basicAuth,
-      ...(partial.basicAuth ?? {}),
-    },
-  };
-
-  if (typeof window !== 'undefined') {
-    const api = (window as unknown as { api?: { updateBackendAuth?: (config: { baseUrl: string; basicAuth: BasicAuthConfig }) => void } }).api;
-    api?.updateBackendAuth?.({
-      baseUrl: currentConfig.baseUrl,
-      basicAuth: { ...currentConfig.basicAuth },
-    });
-  }
-};
-
-export const getBackendConfig = (): BackendConfig => ({
-  baseUrl: currentConfig.baseUrl,
-  wsUrl: currentConfig.wsUrl,
-  basicAuth: { ...currentConfig.basicAuth },
-});
-
-export const deriveWsUrl = (baseUrlOverride?: string, wsUrlOverride?: string): string => {
-  const baseUrl = normalizeHttpOrigin(baseUrlOverride || currentConfig.baseUrl);
-  const wsUrl = wsUrlOverride || currentConfig.wsUrl;
+const resolveUrl = (input: string, baseUrl: string): string => {
   try {
-    const url = new URL(wsUrl);
-    return url.toString();
+    return new URL(input).toString();
   } catch {
-    // If wsUrl is relative, build from baseUrl
-    try {
-      const base = new URL(baseUrl);
-      const protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
-      const path = wsUrl.startsWith('/') ? wsUrl : `/${wsUrl || 'client-ws'}`;
-      return `${protocol}//${base.host}${path}`;
-    } catch {
-      // Fallback to defaults if parsing fails
-      return DEFAULT_BACKEND_WS_URL;
+    return new URL(input, baseUrl).toString();
+  }
+};
+
+const buildHeaders = (originalHeaders: HeadersInit | undefined) => new Headers(originalHeaders ?? {});
+
+const isAuthErrorStatus = (status: number) => status === 401 || status === 403;
+
+export const authorizedFetch = async (
+  input: string,
+  options: AuthorizedFetchOptions = {},
+): Promise<Response> => {
+  const {
+    useAuth = true,
+    baseUrlOverride,
+    authOverride,
+    headers,
+    ...restOptions
+  } = options;
+
+  const config = getBackendConfig();
+  const targetUrl = resolveUrl(input, baseUrlOverride ?? config.baseUrl);
+  const initialHeaders = buildHeaders(headers);
+
+  if (useAuth) {
+    const authHeader = buildAuthorizationHeader(authOverride ?? config.basicAuth);
+    if (authHeader) {
+      initialHeaders.set('Authorization', authHeader);
     }
   }
-};
 
-export const buildAuthorizationHeader = (auth?: BasicAuthConfig): string | undefined => {
-  const config = auth ?? currentConfig.basicAuth;
-  if (!config.enabled) {
-    return undefined;
+  const response = await fetch(targetUrl, {
+    ...restOptions,
+    headers: initialHeaders,
+  });
+
+  if (isAuthErrorStatus(response.status)) {
+    notifyAuthFailure();
+  } else if (response.ok && useAuth) {
+    notifyAuthRecovered();
   }
-  return `Basic ${encodeCredentials(config.username, config.password)}`;
+
+  return response;
 };
-
-export const getBasicAuthHeader = () => buildAuthorizationHeader();
-
-export const getBasicAuthConfig = (): BasicAuthConfig => ({ ...currentConfig.basicAuth });
