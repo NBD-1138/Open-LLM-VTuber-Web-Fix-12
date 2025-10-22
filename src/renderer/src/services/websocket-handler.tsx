@@ -206,10 +206,10 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
         break;
       case 'background-files':
         if (message.files) {
-          console.debug('[WS Handler] Received background files', message.files);
+          console.log('[WS Handler] Received background files', message.files);
           bgUrlContext?.setBackgroundFiles(message.files);
         } else {
-          console.debug('[WS Handler] Received background-files message with no files payload');
+          console.log('[WS Handler] Received background-files message with no files payload');
         }
         break;
       case 'audio':
