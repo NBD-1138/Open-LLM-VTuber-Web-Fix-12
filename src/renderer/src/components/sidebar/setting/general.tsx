@@ -25,8 +25,6 @@ const useCollections = () => {
     ],
   });
 
-  console.debug('[Settings-General] backgroundFiles from context', backgroundFiles);
-
   const backgrounds = createListCollection({
     items: (backgroundFiles ?? [])
       .map((raw) => {
