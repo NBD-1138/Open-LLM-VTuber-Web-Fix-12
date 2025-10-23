@@ -497,7 +497,7 @@ export const useImportCard = (): UseImportCardResult => {
     setSaving(true);
     try {
       let avatarFilename = '';
-      const shouldSaveAvatar = sourceType === 'png' && avatarFile;
+      const shouldSaveAvatar = saveAvatar && sourceType === 'png' && avatarFile;
       if (shouldSaveAvatar) {
         const baseName = sanitizeName(cardPreview.name);
         const formData = new FormData();
