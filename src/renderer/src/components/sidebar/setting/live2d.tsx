@@ -40,7 +40,7 @@ function live2D({ onSave, onCancel }: live2DProps): JSX.Element {
       <Stack {...settingStyles.common.container}>
         <Button
           alignSelf="flex-start"
-          colorPalette="blue"
+          colorScheme="blue"
           onClick={() => setImportOpen(true)}
         >
           {t('settings.live2d.import.button')}
