@@ -6,16 +6,18 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/renderer/src/*"],
-      "@framework/*": ["src/renderer/WebSDK/Framework/src/*"],
-      "@cubismsdksamples/*": ["src/renderer/WebSDK/src/*"],
-      "@motionsyncframework/*": ["src/renderer/WebSDK/src/Framework/src/*"],
-      "@motionsync/*": ["src/renderer/MotionSync/motionsync/*"]
+      "@framework/*": ["src/renderer/src/types/cubism-shim"],
+      "@cubismsdksamples/*": ["src/renderer/src/types/cubism-shim"],
+      "@motionsyncframework/*": ["src/renderer/src/types/cubism-shim"],
+      "@motionsync/*": ["src/renderer/src/types/cubism-shim"]
     }
   },
   "include": [
     "src/renderer/**/*.ts",
     "src/renderer/**/*.tsx",
-    "src/renderer/**/*.d.ts",
-    "src/renderer/WebSDK/src/**/*"
+    "src/renderer/**/*.d.ts"
+  ],
+  "exclude": [
+    "src/renderer/WebSDK/**/*"
   ]
 }

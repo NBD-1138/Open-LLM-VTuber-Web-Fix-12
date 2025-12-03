@@ -1,4 +1,11 @@
 import { ElectronAPI } from '@electron-toolkit/preload';
+import type {
+  LoadMainModelPayload,
+  DiscoveredAsset,
+  ItemTransformUpdate,
+  PersistedTransform,
+  LoadMainModelResult,
+} from '../shared/items';
 
 declare global {
   interface Window {
@@ -18,6 +25,24 @@ declare global {
       setMode: (mode: 'window' | 'pet') => void
       getConfigFiles: () => Promise<any>
       updateConfigFiles: (files: any[]) => void
+      listAvailableItemAssets: () => Promise<DiscoveredAsset[]>
+      loadMainModelScene: (payload: LoadMainModelPayload) => Promise<LoadMainModelResult>
+      showItem: (modelId: string, assetKey: string) => Promise<any>
+      hideItem: (payload: ItemTransformUpdate & { expression?: string | null; motion?: string | null; enableLipSync?: boolean }) => Promise<any>
+      setItemPinned: (payload: {
+        modelId: string
+        assetKey: string
+        pinned: boolean
+        localTransform?: PersistedTransform
+        worldTransform: PersistedTransform
+      }) => Promise<any>
+      setItemTransform: (payload: ItemTransformUpdate) => Promise<any>
+      setItemScale: (payload: ItemTransformUpdate) => Promise<any>
+      setItemZIndex: (payload: ItemTransformUpdate) => Promise<any>
+      setItemExpression: (assetKey: string, expression: string | null) => Promise<any>
+      playItemMotion: (assetKey: string, motion: string | null) => Promise<any>
+      setItemLipSync: (assetKey: string, enable: boolean) => Promise<any>
+      resolveFileUrl: (path: string) => Promise<string>
     }
   }
 }

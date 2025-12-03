@@ -232,7 +232,8 @@ export abstract class CubismRenderer {
     this._anisotropy = 0.0;
     this._model = null;
     this._modelColor = new CubismTextureColor();
-    this._useHighPrecisionMask = false;
+    // Enable high-precision masks by default to support models with many masks.
+    this._useHighPrecisionMask = true;
 
     // 単位行列に初期化
     this._mvpMatrix4x4 = new CubismMatrix44();

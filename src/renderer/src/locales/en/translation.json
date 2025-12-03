@@ -34,7 +34,27 @@
     },
     "live2d": {
       "pointerInteractive": "Pointer Interactive",
-      "scrollToResize": "Enable Scroll to Resize"
+      "scrollToResize": "Enable Scroll to Resize",
+      "itemLibrary": "Item Library",
+      "loadingItems": "Loading items...",
+      "noItemsFound": "No items detected in live2d-models/items.",
+      "kindLive2D": "Live2D Model",
+      "kindPng": "PNG Prop",
+      "hide": "Hide",
+      "show": "Show",
+      "activeItems": "Active Items",
+      "noActiveItems": "No active items for this avatar.",
+      "recenter": "Recenter",
+      "pinnedToAvatar": "Pinned to Avatar",
+      "editingItem": "Editing",
+      "editItem": "Edit Item",
+      "scale": "Scale",
+      "zIndex": "Z-Index",
+      "expression": "Expression",
+      "expressionDefault": "Default",
+      "motion": "Motion",
+      "motionPlaceholder": "Select motion",
+      "lipSync": "Lip Sync"
     },
     "asr": {
       "autoStopMic": "Auto Stop Mic When AI Start Speaking",

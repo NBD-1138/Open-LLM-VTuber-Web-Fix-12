@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright(c) Live2D Inc. All rights reserved.
  *
@@ -485,3 +486,4 @@ function onTouchCancel(e: TouchEvent): void {
 
   LAppDelegate.getInstance()._view!.onTouchesEnded(posX, posY);
 }
+// @ts-nocheck

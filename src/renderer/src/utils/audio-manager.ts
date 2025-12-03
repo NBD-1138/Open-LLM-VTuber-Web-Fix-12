@@ -4,6 +4,7 @@
  */
 class AudioManager {
   private currentAudio: HTMLAudioElement | null = null;
+
   private currentModel: any | null = null;
 
   /**
@@ -21,7 +22,7 @@ class AudioManager {
     if (this.currentAudio) {
       console.log('[AudioManager] Stopping current audio and lip sync');
       const audio = this.currentAudio;
-      
+
       // Stop audio playback
       audio.pause();
       audio.src = '';

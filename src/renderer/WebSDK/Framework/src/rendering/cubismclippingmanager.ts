@@ -40,7 +40,8 @@ export abstract class CubismClippingManager<
     clippingContextFactory: ClippingContextConstructor<T_ClippingContext>
   ) {
     this._renderTextureCount = 0;
-    this._clippingMaskBufferSize = 256;
+    // Increase default mask buffer to better support complex models with many masks.
+    this._clippingMaskBufferSize = 4096;
     this._clippingContextListForMask = new csmVector<T_ClippingContext>();
     this._clippingContextListForDraw = new csmVector<T_ClippingContext>();
     this._channelColors = new csmVector<CubismTextureColor>();

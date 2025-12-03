@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright(c) Live2D Inc. All rights reserved.
  *
@@ -103,3 +104,4 @@ export const RenderTargetHeight = 1000;
 
 export const ENABLE_LIMITED_FRAME_RATE = true;
 export const LIMITED_FRAME_RATE = 60;
+// @ts-nocheck

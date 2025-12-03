@@ -1,0 +1,109 @@
+{
+  "items": {
+    "bandaid (@denchisoft)": {
+      "perModel": {
+        "mao_pro": {
+          "pinned": true,
+          "x": 0.000003427267017741542,
+          "y": 0.000004768371525187831,
+          "scale": 0.2,
+          "zIndex": -5
+        }
+      },
+      "lastExpression": null,
+      "lastMotion": null,
+      "enableLipSync": false
+    },
+    "bed_pink (@catboymech)": {
+      "perModel": {
+        "mao_pro": {
+          "pinned": false,
+          "x": 230,
+          "y": 320,
+          "scale": 0.25,
+          "zIndex": 0
+        }
+      },
+      "lastExpression": null,
+      "lastMotion": null,
+      "enableLipSync": false,
+      "lastWorld": {
+        "x": 230,
+        "y": 320,
+        "scale": 0.25,
+        "zIndex": 0
+      }
+    },
+    "beverage_7Bull (@7MDigital)": {
+      "perModel": {
+        "mao_pro": {
+          "pinned": true,
+          "x": 0.000003427267017741542,
+          "y": 0.000004768371525187831,
+          "scale": 0.2,
+          "zIndex": 5
+        }
+      }
+    },
+    "catvt.model3": {
+      "perModel": {
+        "mao_pro": {
+          "pinned": true,
+          "x": 66.00000342726702,
+          "y": -29.999995231628475,
+          "scale": 0.0556325,
+          "zIndex": 2
+        },
+        "Deadpool": {
+          "pinned": true,
+          "x": -88.99999657273298,
+          "y": -44.999995231628475,
+          "scale": 0.05,
+          "zIndex": 1
+        }
+      },
+      "enableLipSync": true,
+      "lastExpression": null,
+      "lastMotion": null
+    },
+    "xmas_tree_deco (@catboymech)": {
+      "perModel": {
+        "mao_pro": {
+          "pinned": false,
+          "x": 230,
+          "y": 320,
+          "scale": 0.2,
+          "zIndex": 13
+        }
+      },
+      "lastWorld": {
+        "x": 230,
+        "y": 320,
+        "scale": 0.2,
+        "zIndex": 13
+      }
+    },
+    "xmas_tree (@catboymech)": {
+      "perModel": {
+        "mao_pro": {
+          "pinned": true,
+          "x": 0.000003427267017741542,
+          "y": 0.000004768371525187831,
+          "scale": 0.2,
+          "zIndex": 1
+        }
+      },
+      "lastExpression": null,
+      "lastMotion": null,
+      "enableLipSync": false
+    }
+  },
+  "scenes": {
+    "mao_pro": {
+      "visibleItems": []
+    },
+    "Deadpool": {
+      "visibleItems": []
+    }
+  }
+}

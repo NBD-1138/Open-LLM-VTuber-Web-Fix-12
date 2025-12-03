@@ -6,6 +6,8 @@ import { ModelInfo } from '@/context/live2d-config-context';
 import { LAppDelegate } from '../../../WebSDK/src/lappdelegate';
 import { LAppLive2DManager } from '../../../WebSDK/src/lapplive2dmanager';
 import { useMode } from '@/context/mode-context';
+import { itemsRuntime } from '@/services/items/items-runtime';
+import { modelToCanvasPosition } from '@/utils/live2d-coords';
 
 // Constants for model scaling behavior
 const MIN_SCALE = 0.1;
@@ -31,9 +33,19 @@ export const applyScale = (scale: number) => {
 
     const model = manager.getModel(0);
     if (!model) return;
+    const modelMatrix = (model as any)?._modelMatrix;
+    if (!modelMatrix) return;
 
-    // @ts-ignore
-    model._modelMatrix.scale(scale, scale);
+    modelMatrix.scale(scale, scale);
+    try {
+      const matrix = modelMatrix.getArray();
+      const currentPos = { x: matrix[12], y: matrix[13] };
+      const canvasPosition = modelToCanvasPosition(currentPos);
+      const scaleFactor = typeof modelMatrix.getScaleX === "function" ? modelMatrix.getScaleX() : scale;
+      itemsRuntime.setAvatarTransform(canvasPosition, scaleFactor);
+    } catch (error) {
+      console.debug("[useLive2DResize] Unable to update item runtime transform", error);
+    }
   } catch (error) {
     console.debug('Model not ready for scaling yet');
   }
@@ -184,10 +196,9 @@ export const useLive2DResize = ({
       prevSidebarStateRef.current = showSidebar;
 
       if (!containerBounds && !isPet) {
-        console.warn('[Resize] Container bounds not available in window mode.');
+        // container bounds may be unavailable during initial layout; skip verbose logging
       }
       if (width === 0 || height === 0) {
-        console.warn('[Resize] Width or Height is zero, skipping canvas/delegate update.');
         isResizingRef.current = false;
         return;
       }
@@ -201,8 +212,6 @@ export const useLive2DResize = ({
       const delegate = LAppDelegate.getInstance();
       if (delegate) {
         delegate.onResize();
-      } else {
-        console.warn('[Resize] LAppDelegate instance not found.');
       }
 
       isResizingRef.current = false;
@@ -247,7 +256,6 @@ export const useLive2DResize = ({
       animationFrameIdRef.current = null;
     }
   }, []);
-
 
   // Monitor container size changes using ResizeObserver
   useEffect(() => {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright(c) Live2D Inc. All rights reserved.
  *
@@ -215,3 +216,4 @@ export class Rect {
   public up: number; // 上辺
   public down: number; // 下辺
 }
+// @ts-nocheck

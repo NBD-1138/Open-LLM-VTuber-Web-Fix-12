@@ -11,6 +11,7 @@ import { SubtitleContext } from './subtitle-context';
 import { AiStateContext, AiState } from './ai-state-context';
 import { useLocalStorage } from '@/hooks/utils/use-local-storage';
 import { toaster } from '@/components/ui/toaster';
+import { itemsRuntime } from '@/services/items/items-runtime';
 
 /**
  * VAD settings configuration interface
@@ -223,6 +224,8 @@ export function VADProvider({ children }: { children: React.ReactNode }) {
     if (probs.isSpeech > previousTriggeredProbabilityRef.current) {
       setPreviousTriggeredProbability(probs.isSpeech);
     }
+    // Drive live2d item lip sync when enabled
+    itemsRuntime.applyMicLipSync(probs.isSpeech);
   }, []);
 
   /**
@@ -243,6 +246,7 @@ export function VADProvider({ children }: { children: React.ReactNode }) {
     sendAudioPartitionRef.current(audio);
     isProcessingRef.current = false;
     setAiStateRef.current("thinking-speaking");
+    itemsRuntime.applyMicLipSync(0);
   }, []);
 
   /**
@@ -257,6 +261,7 @@ export function VADProvider({ children }: { children: React.ReactNode }) {
     // Restore previous AI state and show helpful misfire message
     setAiStateRef.current(previousAiStateRef.current);
     setSubtitleTextRef.current(t('error.vadMisfire'));
+    itemsRuntime.applyMicLipSync(0);
   }, [t]);
 
   /**
@@ -334,6 +339,7 @@ export function VADProvider({ children }: { children: React.ReactNode }) {
     }
     setMicOn(false);
     isProcessingRef.current = false;
+    itemsRuntime.applyMicLipSync(0);
   }, []);
 
   /**

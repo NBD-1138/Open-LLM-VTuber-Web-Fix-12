@@ -5,15 +5,18 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // @ts-nocheck
 import { useEffect, useRef, useCallback, useState, RefObject } from "react";
+import { initializeLive2D } from '@cubismsdksamples/main';
 import { ModelInfo } from "@/context/live2d-config-context";
 import { updateModelConfig } from '../../../WebSDK/src/lappdefine';
 import { LAppDelegate } from '../../../WebSDK/src/lappdelegate';
-import { initializeLive2D } from '@cubismsdksamples/main';
 import { useMode } from '@/context/mode-context';
+import { itemsRuntime } from '@/services/items/items-runtime';
+import { modelToCanvasPosition } from '@/utils/live2d-coords';
 
 interface UseLive2DModelProps {
   modelInfo: ModelInfo | undefined;
   canvasRef: RefObject<HTMLCanvasElement>;
+  allowAvatarInteraction?: boolean;
 }
 
 interface Position {
@@ -91,6 +94,7 @@ export const playAudioWithLipSync = (audioPath: string, modelIndex = 0): Promise
 export const useLive2DModel = ({
   modelInfo,
   canvasRef,
+  allowAvatarInteraction = true,
 }: UseLive2DModelProps) => {
   const { mode } = useMode();
   const isPet = mode === 'pet';
@@ -168,15 +172,29 @@ export const useLive2DModel = ({
 
         model._modelMatrix.setMatrix(newMatrix);
         modelPositionRef.current = { x, y };
+        const canvasPosition = modelToCanvasPosition({ x, y }, canvasRef.current ?? undefined);
+        const scaleFactor =
+          typeof model._modelMatrix.getScaleX === "function"
+            ? model._modelMatrix.getScaleX()
+            : model?._modelMatrix?._tr?.[0] ?? 1;
+        itemsRuntime.setAvatarTransform(canvasPosition, scaleFactor);
       }
     }
-  }, []);
+  }, [canvasRef]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       const currentPos = getModelPosition();
       modelPositionRef.current = currentPos;
       setPosition(currentPos);
+      const adapter = (window as any).getLAppAdapter?.();
+      const baseModel = adapter?.getModel();
+      const scale =
+        typeof baseModel?._modelMatrix?.getScaleX === "function"
+          ? baseModel?._modelMatrix.getScaleX()
+          : baseModel?._modelMatrix?._tr?.[0] ?? 1;
+      const canvasPosition = modelToCanvasPosition(currentPos, canvasRef.current ?? undefined);
+      itemsRuntime.setAvatarTransform(canvasPosition, scale);
     }, 500);
 
     return () => clearTimeout(timer);
@@ -203,6 +221,8 @@ export const useLive2DModel = ({
   }, [getCanvasScale]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!allowAvatarInteraction) return;
+
     const adapter = (window as any).getLAppAdapter?.();
     if (!adapter || !canvasRef.current) return;
 
@@ -222,8 +242,16 @@ export const useLive2DModel = ({
     const modelX = view._deviceToScreen.transformX(scaledX);
     const modelY = view._deviceToScreen.transformY(scaledY);
 
-    const hitAreaName = model.anyhitTest(modelX, modelY);
-    const isHitOnModel = model.isHitOnModel(modelX, modelY);
+    let hitAreaName: string | null = null;
+    let isHitOnModel = false;
+    try {
+      hitAreaName = model.anyhitTest(modelX, modelY);
+      isHitOnModel = model.isHitOnModel(modelX, modelY);
+    } catch (error) {
+      console.warn("[useLive2DModel] Hit test failed", error);
+      hitAreaName = null;
+      isHitOnModel = false;
+    }
     // --- End Check ---
 
     if (hitAreaName !== null || isHitOnModel) {
@@ -239,9 +267,11 @@ export const useLive2DModel = ({
         modelStartPos.current = { x: matrix[12], y: matrix[13] };
       }
     }
-  }, [canvasRef, modelInfo]);
+  }, [canvasRef, modelInfo, allowAvatarInteraction]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!allowAvatarInteraction) return;
+
     const adapter = (window as any).getLAppAdapter?.();
     const view = LAppDelegate.getInstance().getView();
     const model = adapter?.getModel();
@@ -308,6 +338,12 @@ export const useLive2DModel = ({
 
       modelPositionRef.current = { x: newX, y: newY };
       setPosition({ x: newX, y: newY }); // Update React state if needed for UI feedback
+      const canvasPosition = modelToCanvasPosition({ x: newX, y: newY }, canvasRef.current ?? undefined);
+      const scaleFactor =
+        typeof model?._modelMatrix?.getScaleX === "function"
+          ? model._modelMatrix.getScaleX()
+          : model?._modelMatrix?._tr?.[0] ?? 1;
+      itemsRuntime.setAvatarTransform(canvasPosition, scaleFactor);
     }
     // --- End Continue Drag Logic ---
 
@@ -331,9 +367,11 @@ export const useLive2DModel = ({
       }
     }
     // --- End Pet Hover Logic ---
-  }, [isPet, isDragging, electronApi, canvasRef]);
+  }, [isPet, isDragging, electronApi, canvasRef, allowAvatarInteraction]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    if (!allowAvatarInteraction) return;
+
     const adapter = (window as any).getLAppAdapter?.();
     const model = adapter?.getModel();
     const view = LAppDelegate.getInstance().getView();
@@ -349,6 +387,15 @@ export const useLive2DModel = ({
           modelPositionRef.current = finalPos;
           modelStartPos.current = finalPos; // Update base position for next potential drag
           setPosition(finalPos);
+          const canvasPosition = modelToCanvasPosition(finalPos, canvasRef.current ?? undefined);
+          const scaleFactor =
+            typeof currentModel._modelMatrix?.getScaleX === "function"
+              ? currentModel._modelMatrix.getScaleX()
+              : currentModel._modelMatrix?._tr?.[0] ?? 1;
+          itemsRuntime.setAvatarTransform(
+            canvasPosition,
+            scaleFactor,
+          );
         }
       }
     } else if (isPotentialTapRef.current && adapter && model && view && canvasRef.current) {
@@ -382,9 +429,11 @@ export const useLive2DModel = ({
 
     // Reset potential tap flag regardless of outcome
     isPotentialTapRef.current = false;
-  }, [isDragging, canvasRef, modelInfo]);
+  }, [isDragging, canvasRef, modelInfo, allowAvatarInteraction]);
 
   const handleMouseLeave = useCallback(() => {
+    if (!allowAvatarInteraction) return;
+
     if (isDragging) {
       // If dragging and mouse leaves, treat it like a mouse up to end drag
       handleMouseUp({} as React.MouseEvent); // Pass a dummy event or adjust handleMouseUp signature
@@ -398,7 +447,7 @@ export const useLive2DModel = ({
       isHoveringModelRef.current = false;
       electronApi.ipcRenderer.send('update-component-hover', 'live2d-model', false);
     }
-  }, [isPet, isDragging, electronApi, handleMouseUp]);
+  }, [isPet, isDragging, electronApi, handleMouseUp, allowAvatarInteraction]);
 
   useEffect(() => {
     if (!isPet && electronApi && isHoveringModelRef.current) {
@@ -483,13 +532,13 @@ export const useLive2DModel = ({
                 count: motions.length,
                 motions: motions.map((motion: any, index: number) => ({
                   index,
-                  file: motion.File
-                }))
+                  file: motion.File,
+                })),
               });
             }
           }
         }
-        
+
         console.log('Available motion groups:', motionGroups);
         return motionGroups;
       } catch (error) {
@@ -517,7 +566,7 @@ Live2DDebug.getMotionInfo()  // See available motions
 Live2DDebug.playMotion("", 0)  // Play first motion from default group
 Live2DDebug.playRandomMotion("")  // Play random motion from default group
         `);
-      }
+      },
     };
 
     console.log('Live2D Debug functions exposed to window.Live2DDebug');

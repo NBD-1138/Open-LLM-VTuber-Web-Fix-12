@@ -1,8 +1,15 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import electron from 'electron';
-const { contextBridge, ipcRenderer, desktopCapturer } = electron;
 import { electronAPI } from '@electron-toolkit/preload';
 import { ConfigFile } from '../main/menu-manager';
+import type {
+  LoadMainModelPayload,
+  DiscoveredAsset,
+  ItemTransformUpdate,
+  PersistedTransform,
+} from '../shared/items';
+
+const { contextBridge, ipcRenderer, desktopCapturer } = electron;
 
 declare global {
   interface Window {
@@ -66,6 +73,24 @@ const api = {
   updateConfigFiles: (files: ConfigFile[]) => {
     ipcRenderer.send('update-config-files', files);
   },
+  listAvailableItemAssets: (): Promise<DiscoveredAsset[]> => ipcRenderer.invoke('items:list-available'),
+  loadMainModelScene: (payload: LoadMainModelPayload) => ipcRenderer.invoke('items:load-main-model', payload),
+  showItem: (modelId: string, assetKey: string) => ipcRenderer.invoke('items:show', { modelId, assetKey }),
+  hideItem: (payload: ItemTransformUpdate & { expression?: string | null; motion?: string | null; enableLipSync?: boolean }) => ipcRenderer.invoke('items:hide', payload),
+  setItemPinned: (payload: {
+    modelId: string;
+    assetKey: string;
+    pinned: boolean;
+    localTransform?: PersistedTransform;
+    worldTransform: PersistedTransform;
+  }) => ipcRenderer.invoke('items:set-pinned', payload),
+  setItemTransform: (payload: ItemTransformUpdate) => ipcRenderer.invoke('items:set-transform', payload),
+  setItemScale: (payload: ItemTransformUpdate) => ipcRenderer.invoke('items:set-scale', payload),
+  setItemZIndex: (payload: ItemTransformUpdate) => ipcRenderer.invoke('items:set-zindex', payload),
+  setItemExpression: (assetKey: string, expression: string | null) => ipcRenderer.invoke('items:set-expression', { assetKey, expression }),
+  playItemMotion: (assetKey: string, motion: string | null) => ipcRenderer.invoke('items:set-motion', { assetKey, motion }),
+  setItemLipSync: (assetKey: string, enable: boolean) => ipcRenderer.invoke('items:set-lipsync', { assetKey, enable }),
+  resolveFileUrl: (filePath: string) => ipcRenderer.invoke('utils:resolve-file-url', filePath),
 };
 
 if (process.contextIsolated) {

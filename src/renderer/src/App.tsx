@@ -47,7 +47,6 @@ function AppContent(): JSX.Element {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-    
   document.documentElement.style.overflow = 'hidden';
   document.body.style.overflow = 'hidden';
   document.documentElement.style.height = '100%';
@@ -169,36 +168,34 @@ function App(): JSX.Element {
 // New component to access mode for global styles
 function AppWithGlobalStyles(): JSX.Element {
   return (
-    <>
-      <CameraProvider>
-        <ScreenCaptureProvider>
-          <CharacterConfigProvider>
-            <ChatHistoryProvider>
-              <AiStateProvider>
-                <ProactiveSpeakProvider>
-                  <Live2DConfigProvider>
-                    <SubtitleProvider>
-                      <VADProvider>
-                        <BgUrlProvider>
-                          <GroupProvider>
-                            <BrowserProvider>
-                              <WebSocketHandler>
-                                <Toaster />
-                                <AppContent />
-                              </WebSocketHandler>
-                            </BrowserProvider>
-                          </GroupProvider>
-                        </BgUrlProvider>
-                      </VADProvider>
-                    </SubtitleProvider>
-                  </Live2DConfigProvider>
-                </ProactiveSpeakProvider>
-              </AiStateProvider>
-            </ChatHistoryProvider>
-          </CharacterConfigProvider>
-        </ScreenCaptureProvider>
-      </CameraProvider>
-    </>
+    <CameraProvider>
+      <ScreenCaptureProvider>
+        <CharacterConfigProvider>
+          <ChatHistoryProvider>
+            <AiStateProvider>
+              <ProactiveSpeakProvider>
+                <Live2DConfigProvider>
+                  <SubtitleProvider>
+                    <VADProvider>
+                      <BgUrlProvider>
+                        <GroupProvider>
+                          <BrowserProvider>
+                            <WebSocketHandler>
+                              <Toaster />
+                              <AppContent />
+                            </WebSocketHandler>
+                          </BrowserProvider>
+                        </GroupProvider>
+                      </BgUrlProvider>
+                    </VADProvider>
+                  </SubtitleProvider>
+                </Live2DConfigProvider>
+              </ProactiveSpeakProvider>
+            </AiStateProvider>
+          </ChatHistoryProvider>
+        </CharacterConfigProvider>
+      </ScreenCaptureProvider>
+    </CameraProvider>
   );
 }
 

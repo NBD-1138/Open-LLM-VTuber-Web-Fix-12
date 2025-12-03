@@ -30,11 +30,11 @@ function HelpIcon({ content }: HelpIconProps): JSX.Element {
   return (
     <Tooltip
       showArrow
-      content={
+      content={(
         <Text fontSize="sm" maxW="300px" lineHeight="1.4">
           {content}
         </Text>
-      }
+      )}
       open={isHovering}
     >
       <Box
@@ -135,12 +135,12 @@ export function NumberField({
   return (
     <Field
       {...settingStyles.common.field}
-      label={
+      label={(
         <Flex align="center">
           <Text {...settingStyles.common.fieldLabel}>{label}</Text>
           {help && <HelpIcon content={help} />}
         </Flex>
-      }
+      )}
     >
       <NumberInput.Root
         {...settingStyles.common.numberInput.root}
@@ -165,12 +165,12 @@ export function SwitchField({ label, checked, onChange, help }: SwitchFieldProps
   return (
     <Field
       {...settingStyles.common.field}
-      label={
+      label={(
         <Flex align="center">
           <Text {...settingStyles.common.fieldLabel}>{label}</Text>
           {help && <HelpIcon content={help} />}
         </Flex>
-      }
+      )}
     >
       <Switch
         {...settingStyles.common.switch}
@@ -191,12 +191,12 @@ export function InputField({
   return (
     <Field
       {...settingStyles.general.field}
-      label={
+      label={(
         <Flex align="center">
           <Text {...settingStyles.general.field.label}>{label}</Text>
           {help && <HelpIcon content={help} />}
         </Flex>
-      }
+      )}
     >
       <Input
         {...settingStyles.general.input}

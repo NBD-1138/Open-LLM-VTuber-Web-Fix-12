@@ -239,7 +239,7 @@ export class WindowManager {
 
     this.window.webContents.send('mode-changed', 'pet');
   }
-  
+
   getWindow(): BrowserWindow | null {
     return this.window;
   }

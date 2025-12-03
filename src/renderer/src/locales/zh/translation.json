@@ -32,7 +32,27 @@
     },
     "live2d": {
       "pointerInteractive": "鼠标交互",
-      "scrollToResize": "启用滚轮缩放"
+      "scrollToResize": "启用滚轮缩放",
+      "itemLibrary": "物品库",
+      "loadingItems": "正在加载物品...",
+      "noItemsFound": "在 live2d-models/items 中未找到物品。",
+      "kindLive2D": "Live2D 模型",
+      "kindPng": "PNG 道具",
+      "hide": "隐藏",
+      "show": "显示",
+      "activeItems": "已激活的物品",
+      "noActiveItems": "该角色当前没有激活的物品。",
+      "recenter": "重新居中",
+      "pinnedToAvatar": "固定在头像上",
+      "editingItem": "编辑中",
+      "editItem": "编辑物品",
+      "scale": "缩放",
+      "zIndex": "层级",
+      "expression": "表情",
+      "expressionDefault": "默认",
+      "motion": "动作",
+      "motionPlaceholder": "选择动作",
+      "lipSync": "口型同步"
     },
     "asr": {
       "autoStopMic": "AI开始说话时自动关闭麦克风",
