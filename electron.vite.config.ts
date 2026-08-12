@@ -7,6 +7,20 @@ import { normalizePath } from 'vite';
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
+    build: {
+      rollupOptions: {
+        external: [
+          '@nut-tree-fork/nut-js',
+          '@nut-tree-fork/libnut',
+          '@nut-tree-fork/libnut-win32',
+          '@nut-tree-fork/libnut-linux',
+          '@nut-tree-fork/libnut-darwin',
+          'bindings',
+          'get-windows',
+          '@mapbox/node-pre-gyp',
+        ],
+      },
+    },
   },
   preload: {
     plugins: [externalizeDepsPlugin()],

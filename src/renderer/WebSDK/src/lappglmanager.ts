@@ -39,28 +39,33 @@ export class LAppGlManager {
 
   constructor() {
     // Use existing canvas instead of creating a new one
-    canvas = document.getElementById('canvas') as HTMLCanvasElement;
+    canvas = document.getElementById("canvas") as HTMLCanvasElement;
     // canvas = document.createElement("canvas");
 
     if (!canvas) {
-      console.warn("Canvas element not found during LAppGlManager initialization");
+      console.warn(
+        "Canvas element not found during LAppGlManager initialization",
+      );
       return;
     }
 
-     gl = canvas.getContext("webgl2");
+    gl = canvas.getContext("webgl2");
 
-     if (!gl) {
-       // gl初期化失敗
-       alert("Cannot initialize WebGL. This browser does not support.");
-       gl = null;
+    if (!gl) {
+      // gl初期化失敗
+      alert("Cannot initialize WebGL. This browser does not support.");
+      gl = null;
 
-       document.body.innerHTML =
-         "This browser does not support the <code>&lt;canvas&gt;</code> element.";
-     }
+      document.body.innerHTML =
+        "This browser does not support the <code>&lt;canvas&gt;</code> element.";
+    }
   }
 
   /**
    * 解放する。
    */
-  public release(): void {}
+  public release(): void {
+    gl = null;
+    canvas = null;
+  }
 }

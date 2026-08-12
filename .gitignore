@@ -56,6 +56,8 @@ packages/react-devtools-extensions/.tempUserDataDir
 *.pyc
 .grunt
 out
+tools/voiceattack-binary-decoder/bin/
+tools/voiceattack-binary-decoder/obj/
 
 # Cursor files
 .cursorrules

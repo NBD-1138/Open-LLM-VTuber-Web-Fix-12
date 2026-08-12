@@ -6,6 +6,8 @@ import { ModelInfo } from '@/context/live2d-config-context';
 import { LAppDelegate } from '../../../WebSDK/src/lappdelegate';
 import { LAppLive2DManager } from '../../../WebSDK/src/lapplive2dmanager';
 import { useMode } from '@/context/mode-context';
+import { itemsRuntime } from '@/services/items/items-runtime';
+import { modelToCanvasPosition } from '@/utils/live2d-coords';
 
 // Constants for model scaling behavior
 const MIN_SCALE = 0.1;
@@ -32,8 +34,22 @@ export const applyScale = (scale: number) => {
     const model = manager.getModel(0);
     if (!model) return;
 
-    // @ts-ignore
-    model._modelMatrix.scale(scale, scale);
+    const modelMatrix = (model as any)?._modelMatrix;
+    if (!modelMatrix) return;
+
+    modelMatrix.scale(scale, scale);
+    try {
+      const matrix = modelMatrix.getArray();
+      const currentPos = { x: matrix[12], y: matrix[13] };
+      const canvasPosition = modelToCanvasPosition(currentPos);
+      const scaleFactor =
+        typeof modelMatrix.getScaleX === "function"
+          ? modelMatrix.getScaleX()
+          : scale;
+      itemsRuntime.setAvatarTransform(canvasPosition, scaleFactor);
+    } catch (error) {
+      console.debug("[useLive2DResize] Unable to update item runtime transform", error);
+    }
   } catch (error) {
     console.debug('Model not ready for scaling yet');
   }

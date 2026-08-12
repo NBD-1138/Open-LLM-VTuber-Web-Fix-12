@@ -18,14 +18,15 @@ import { LAppLive2DManager } from "./lapplive2dmanager";
 export function initializeLive2D(): void {
   console.log(
     "Initializing Live2D with resourcePath:",
-    LAppDefine.ResourcesPath
+    LAppDefine.ResourcesPath,
   );
   console.log("Model directories:", LAppDefine.ModelDir);
 
-  // Clean up any existing instances first
-  if (LAppDelegate.getInstance()) {
-    // Release existing model resources
+  // Release existing model resources before loading the current one.
+  try {
     LAppLive2DManager.releaseInstance();
+  } catch (error) {
+    console.debug("Live2D manager release skipped:", error);
   }
 
   if (
@@ -42,8 +43,8 @@ export function initializeLive2D(): void {
 
   // Make sure LAppAdapter is available globally
   if (!(window as any).getLAppAdapter) {
-    console.log('Setting up getLAppAdapter function');
-    const { LAppAdapter } = require('./lappadapter');
+    console.log("Setting up getLAppAdapter function");
+    const { LAppAdapter } = require("./lappadapter");
     (window as any).getLAppAdapter = () => LAppAdapter.getInstance();
   }
 
@@ -59,7 +60,9 @@ export function initializeLive2D(): void {
       const y = view?._deviceToScreen.transformY(e.y);
 
       // Check if mouse is over the Live2D model
-      (window as any).api.setIgnoreMouseEvent(!model?.anyhitTest(x, y) && !model?.isHitOnModel(x, y));
+      (window as any).api.setIgnoreMouseEvent(
+        !model?.anyhitTest(x, y) && !model?.isHitOnModel(x, y),
+      );
     });
 
     // Add pointerdown event listener
@@ -74,7 +77,11 @@ export function initializeLive2D(): void {
       // Test hit and log result
       const hitAreaName = model?.anyhitTest(x, y);
       const isHit = hitAreaName !== null || model?.isHitOnModel(x, y);
-      console.log("Model clicked:", isHit, hitAreaName ? `in area: ${hitAreaName}` : '');
+      console.log(
+        "Model clicked:",
+        isHit,
+        hitAreaName ? `in area: ${hitAreaName}` : "",
+      );
     });
   }
 }
@@ -100,7 +107,7 @@ window.addEventListener(
 window.addEventListener(
   "beforeunload",
   (): void => LAppDelegate.releaseInstance(),
-  { passive: true }
+  { passive: true },
 );
 
 /**
@@ -110,10 +117,14 @@ window.addEventListener(
   "resize",
   () => {
     if (LAppDefine.CanvasSize === "auto") {
+      const canvasElement = document.getElementById("canvas");
+      if (!canvasElement) {
+        return;
+      }
       LAppDelegate.getInstance().onResize();
     }
   },
-  { passive: true }
+  { passive: true },
 );
 
 // Make the initialization function available globally

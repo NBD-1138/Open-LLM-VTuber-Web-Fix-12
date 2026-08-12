@@ -1,0 +1,93 @@
+{
+  "items": {
+    "bandaid (@denchisoft)": {
+      "perModel": {
+        "mao_pro": {
+          "pinned": true,
+          "x": 0.00004836008952224802,
+          "y": -0.000009909854384204664,
+          "scale": 0.2,
+          "zIndex": 0
+        }
+      },
+      "lastExpression": null,
+      "lastMotion": null,
+      "enableLipSync": false
+    },
+    "bed_pink (@catboymech)": {
+      "perModel": {
+        "mao_pro": {
+          "pinned": true,
+          "x": 0.00004836008952224802,
+          "y": -0.000009909854384204664,
+          "scale": 0.2,
+          "zIndex": 0
+        }
+      },
+      "lastExpression": null,
+      "lastMotion": null,
+      "enableLipSync": false
+    },
+    "bed_pink_blanket (@catboymech)": {
+      "perModel": {
+        "mao_pro": {
+          "pinned": true,
+          "x": 0.00004836008952224802,
+          "y": -0.000009909854384204664,
+          "scale": 0.2,
+          "zIndex": 0
+        }
+      },
+      "lastExpression": null,
+      "lastMotion": null,
+      "enableLipSync": false
+    },
+    "cat_tail_black (@catboymech)": {
+      "perModel": {
+        "mao_pro": {
+          "pinned": true,
+          "x": 0.00004836008952224802,
+          "y": -0.000009909854384204664,
+          "scale": 0.2,
+          "zIndex": 0
+        }
+      },
+      "lastExpression": null,
+      "lastMotion": null,
+      "enableLipSync": false
+    },
+    "cat_tail_yellow (@catboymech)": {
+      "perModel": {
+        "mao_pro": {
+          "pinned": true,
+          "x": 70.00004820153185,
+          "y": -132.00001149543107,
+          "scale": 0.38850874075813396,
+          "zIndex": 0
+        }
+      },
+      "lastWorld": {
+        "x": 1552.9999980180291,
+        "y": 640.9999993657693,
+        "scale": 0.38850874075813396,
+        "zIndex": 0
+      }
+    }
+  },
+  "scenes": {
+    "mao_pro": {
+      "visibleItems": [
+        "cat_tail_yellow (@catboymech)"
+      ]
+    },
+    "Prototype": {
+      "visibleItems": []
+    },
+    "Deadpool": {
+      "visibleItems": []
+    },
+    "FluffDragon": {
+      "visibleItems": []
+    }
+  }
+}

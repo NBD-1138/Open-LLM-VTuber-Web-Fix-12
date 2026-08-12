@@ -21,9 +21,9 @@ export const layoutStyles = {
     flexDirection: { base: 'column', md: 'row' },
     mt: isElectron ? '30px' : '0',
   },
-  sidebar: {
+  sidebar: (width: string) => ({
     position: 'relative' as const,
-    width: { base: '100%', md: '440px' },
+    width: { base: '100%', md: width },
     height: { base: 'auto', md: '100%' },
     bg: 'gray.800',
     borderRight: '1px solid',
@@ -31,7 +31,7 @@ export const layoutStyles = {
     overflow: 'hidden',
     flexShrink: 0,
     transition: 'all 0.2s',
-  },
+  }),
   mainContent: {
     flex: 1,
     height: { base: 'calc(100% - 120px)', md: '100%' },

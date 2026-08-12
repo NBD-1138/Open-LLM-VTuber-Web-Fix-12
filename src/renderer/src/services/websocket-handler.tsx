@@ -5,7 +5,11 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { wsService, MessageEvent } from '@/services/websocket-service';
 import {
-  WebSocketContext, HistoryInfo, defaultWsUrl, defaultBaseUrl,
+  WebSocketContext,
+  HistoryInfo,
+  TwitchStatusMessage,
+  defaultWsUrl,
+  defaultBaseUrl,
 } from '@/context/websocket-context';
 import { ModelInfo, useLive2DConfig } from '@/context/live2d-config-context';
 import { useSubtitle } from '@/context/subtitle-context';
@@ -21,6 +25,43 @@ import { useLocalStorage } from '@/hooks/utils/use-local-storage';
 import { useGroup } from '@/context/group-context';
 import { useInterrupt } from '@/hooks/utils/use-interrupt';
 import { useBrowser } from '@/context/browser-context';
+
+const normalizeTwitchStatus = (
+  message: MessageEvent,
+): TwitchStatusMessage | null => {
+  if (
+    typeof message.enabled !== 'boolean'
+    || typeof message.status !== 'string'
+    || typeof message.authenticated !== 'boolean'
+  ) {
+    return null;
+  }
+
+  return {
+    type: 'live/twitch/status',
+    enabled: message.enabled,
+    status: message.status as TwitchStatusMessage['status'],
+    authenticated: message.authenticated,
+    channel: message.channel ?? '',
+    broadcaster_id: message.broadcaster_id ?? '',
+    talkback_enabled: message.talkback_enabled ?? true,
+    read_chat_aloud: message.read_chat_aloud ?? true,
+    chat_tts_volume: message.chat_tts_volume ?? 1,
+    notify_subscriptions: message.notify_subscriptions ?? true,
+    notify_first_observed_chatters: message.notify_first_observed_chatters ?? true,
+    first_observed_chatter_viewer_threshold:
+      message.first_observed_chatter_viewer_threshold ?? 5,
+    redemptions_enabled: message.redemptions_enabled ?? true,
+    self_moderation_enabled: message.self_moderation_enabled ?? false,
+    debug: message.debug ?? false,
+    restart_required_fields: message.restart_required_fields ?? [],
+    reauth_available: message.reauth_available ?? false,
+    auth_flow_pending: message.auth_flow_pending ?? false,
+    oauth_redirect_uri: message.oauth_redirect_uri ?? '',
+    token_storage: message.token_storage ?? '',
+    detail: message.detail ?? null,
+  };
+};
 
 function WebSocketHandler({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -40,6 +81,7 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
   const autoStartMicOnConvEndRef = useRef(autoStartMicOnConvEnd);
   const { interrupt } = useInterrupt();
   const { setBrowserViewData } = useBrowser();
+  const [twitchStatus, setTwitchStatus] = useState<TwitchStatusMessage | null>(null);
 
   useEffect(() => {
     autoStartMicOnConvEndRef.current = autoStartMicOnConvEnd;
@@ -164,6 +206,7 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
             displayText: message.display_text || null,
             expressions: message.actions?.expressions || null,
             forwarded: message.forwarded || false,
+            automationRequestId: message.automation_request_id,
           });
         }
         break;
@@ -256,6 +299,35 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
           });
         }
         break;
+      case 'external-chat':
+        if (message.text) {
+          appendHumanMessage(message.text);
+        }
+        break;
+      case 'external-notification':
+        if (message.text) {
+          toaster.create({
+            title: message.text,
+            type: 'info',
+            duration: 2000,
+          });
+        }
+        break;
+      case 'talkback-forward':
+        if (message.text) {
+          const payload: Record<string, unknown> = {
+            type: 'text-input',
+            text: message.text,
+          };
+          if (message.metadata) {
+            payload.metadata = message.metadata;
+          }
+          wsService.sendMessage(payload);
+        }
+        break;
+      case 'eventsub':
+        console.debug('EventSub notification:', message.payload);
+        break;
       case 'force-new-message':
         setForceNewMessage(true);
         break;
@@ -286,12 +358,33 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
           console.warn('Received incomplete tool_call_status message:', message);
         }
         break;
+      case 'live/twitch/status': {
+        const nextStatus = normalizeTwitchStatus(message);
+        if (nextStatus) {
+          setTwitchStatus(nextStatus);
+        } else {
+          console.warn('Received malformed Twitch status message:', message);
+        }
+        break;
+      }
+      case 'automation/status':
+      case 'automation/result':
+      case 'automation/execute':
+      case 'automation/cancel':
+      case 'automation/emergency_stop':
+      case 'automation/capabilities':
+      case 'automation/assistant-state':
+      case 'automation/voice-command-resolve-result':
+      case 'automation/speak-fixed-error':
+        // These are handled by the dedicated automation context subscription.
+        break;
       default:
         console.warn('Unknown message type:', message.type);
     }
   }, [aiState, addAudioTask, appendHumanMessage, baseUrl, bgUrlContext, setAiState, setConfName, setConfUid, setConfigFiles, setCurrentHistoryUid, setHistoryList, setMessages, setModelInfo, setSubtitleText, startMic, stopMic, setSelfUid, setGroupMembers, setIsOwner, backendSynthComplete, setBackendSynthComplete, clearResponse, handleControlMessage, appendOrUpdateToolCallMessage, interrupt, setBrowserViewData, t]);
 
   useEffect(() => {
+    setTwitchStatus(null);
     wsService.connect(wsUrl);
   }, [wsUrl]);
 
@@ -312,7 +405,8 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
     setWsUrl,
     baseUrl,
     setBaseUrl,
-  }), [wsState, wsUrl, baseUrl]);
+    twitchStatus,
+  }), [wsState, wsUrl, baseUrl, twitchStatus]);
 
   return (
     <WebSocketContext.Provider value={webSocketContextValue}>

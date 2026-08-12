@@ -6,6 +6,19 @@ import LanguageDetector from "i18next-browser-languagedetector";
 // Import translation resources
 import enTranslation from "./locales/en/translation.json";
 import zhTranslation from "./locales/zh/translation.json";
+import zhAssistantTranslation from "./locales/zh/assistant.json";
+
+const zhMergedTranslation = {
+  ...zhTranslation,
+  settings: {
+    ...(zhTranslation as any).settings,
+    tabs: {
+      ...((zhTranslation as any).settings?.tabs ?? {}),
+      ...(zhAssistantTranslation as any).settings.tabs,
+    },
+  },
+  assistant: (zhAssistantTranslation as any).assistant,
+};
 
 // Configure i18next instance
 i18n
@@ -17,6 +30,10 @@ i18n
   .init({
     // Default language when detection fails
     fallbackLng: "en",
+    supportedLngs: ["en", "zh"],
+    nonExplicitSupportedLngs: true,
+    load: "languageOnly",
+    cleanCode: true,
     // Debug mode for development
     debug: process.env.NODE_ENV === "development",
     // Namespaces configuration
@@ -27,8 +44,11 @@ i18n
       en: {
         translation: enTranslation,
       },
+      "en-US": {
+        translation: enTranslation,
+      },
       zh: {
-        translation: zhTranslation,
+        translation: zhMergedTranslation,
       },
     },
     // Language detection options

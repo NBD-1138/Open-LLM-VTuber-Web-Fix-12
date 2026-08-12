@@ -16,6 +16,41 @@ export interface HistoryInfo {
   timestamp: string | null;
 }
 
+export type TwitchServiceStatus =
+  | 'disabled'
+  | 'unconfigured'
+  | 'unauthenticated'
+  | 'disconnected'
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
+  | 'error'
+  | 'stopping';
+
+export interface TwitchStatusMessage {
+  type: 'live/twitch/status';
+  enabled: boolean;
+  status: TwitchServiceStatus;
+  authenticated: boolean;
+  channel: string;
+  broadcaster_id: string;
+  talkback_enabled: boolean;
+  read_chat_aloud: boolean;
+  chat_tts_volume: number;
+  notify_subscriptions: boolean;
+  notify_first_observed_chatters: boolean;
+  first_observed_chatter_viewer_threshold: number;
+  redemptions_enabled: boolean;
+  self_moderation_enabled: boolean;
+  debug: boolean;
+  restart_required_fields: string[];
+  reauth_available: boolean;
+  auth_flow_pending: boolean;
+  oauth_redirect_uri: string;
+  token_storage: string;
+  detail?: string | null;
+}
+
 interface WebSocketContextProps {
   sendMessage: (message: object) => void;
   wsState: string;
@@ -24,16 +59,18 @@ interface WebSocketContextProps {
   setWsUrl: (url: string) => void;
   baseUrl: string;
   setBaseUrl: (url: string) => void;
+  twitchStatus: TwitchStatusMessage | null;
 }
 
 export const WebSocketContext = React.createContext<WebSocketContextProps>({
   sendMessage: wsService.sendMessage.bind(wsService),
   wsState: 'CLOSED',
-  reconnect: () => wsService.connect(DEFAULT_WS_URL),
+  reconnect: () => wsService.connect(DEFAULT_WS_URL, true),
   wsUrl: DEFAULT_WS_URL,
   setWsUrl: () => {},
   baseUrl: DEFAULT_BASE_URL,
   setBaseUrl: () => {},
+  twitchStatus: null,
 });
 
 export function useWebSocket() {
@@ -52,17 +89,18 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [baseUrl, setBaseUrl] = useLocalStorage('baseUrl', DEFAULT_BASE_URL);
   const handleSetWsUrl = useCallback((url: string) => {
     setWsUrl(url);
-    wsService.connect(url);
+    wsService.connect(url, true);
   }, [setWsUrl]);
 
   const value = {
     sendMessage: wsService.sendMessage.bind(wsService),
     wsState: 'CLOSED',
-    reconnect: () => wsService.connect(wsUrl),
+    reconnect: () => wsService.connect(wsUrl, true),
     wsUrl,
     setWsUrl: handleSetWsUrl,
     baseUrl,
     setBaseUrl,
+    twitchStatus: null,
   };
 
   return (

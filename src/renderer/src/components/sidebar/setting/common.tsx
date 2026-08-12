@@ -1,20 +1,25 @@
 /* eslint-disable react/require-default-props */
-import { useState } from 'react';
+import { useState } from "react";
 import {
-  Text, Input, NumberInput, createListCollection, Flex, Box,
-} from '@chakra-ui/react';
-import { HiQuestionMarkCircle } from 'react-icons/hi';
-import { Field } from '@/components/ui/field';
-import { Switch } from '@/components/ui/switch';
-import { Tooltip } from '@/components/ui/tooltip';
+  Text,
+  Input,
+  NumberInput,
+  createListCollection,
+  Flex,
+  Box,
+} from "@chakra-ui/react";
+import { HiQuestionMarkCircle } from "react-icons/hi";
+import { Field } from "@/components/ui/field";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   SelectContent,
   SelectItem,
   SelectRoot,
   SelectTrigger,
   SelectValueText,
-} from '@/components/ui/select';
-import { settingStyles } from './setting-styles';
+} from "@/components/ui/select";
+import { settingStyles } from "./setting-styles";
 
 // Help Icon Component
 interface HelpIconProps {
@@ -40,7 +45,7 @@ function HelpIcon({ content }: HelpIconProps): JSX.Element {
       <Box
         as={HiQuestionMarkCircle}
         color="gray.400"
-        _hover={{ color: 'gray.600' }}
+        _hover={{ color: "gray.600" }}
         cursor="help"
         w="16px"
         h="16px"
@@ -55,37 +60,44 @@ function HelpIcon({ content }: HelpIconProps): JSX.Element {
 
 // Common Props Types
 interface SelectFieldProps {
-  label: string
-  value: string[]
-  onChange: (value: string[]) => void
-  collection: ReturnType<typeof createListCollection<{ label: string; value: string }>>
-  placeholder: string
+  label: string;
+  value: string[];
+  onChange: (value: string[]) => void;
+  collection: ReturnType<
+    typeof createListCollection<{ label: string; value: string }>
+  >;
+  placeholder: string;
+  help?: string;
+  disabled?: boolean;
 }
 
 interface NumberFieldProps {
-  label: string
-  value: number | string
-  onChange: (value: string) => void
-  min?: number
-  max?: number
-  step?: number
-  allowMouseWheel?: boolean
-  help?: string
+  label: string;
+  value: number | string;
+  onChange: (value: string) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  allowMouseWheel?: boolean;
+  help?: string;
+  disabled?: boolean;
 }
 
 interface SwitchFieldProps {
-  label: string
-  checked: boolean
-  onChange: (checked: boolean) => void
-  help?: string
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  help?: string;
+  disabled?: boolean;
 }
 
 interface InputFieldProps {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  help?: string
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  help?: string;
+  disabled?: boolean;
 }
 
 // Reusable Components
@@ -95,17 +107,21 @@ export function SelectField({
   onChange,
   collection,
   placeholder,
+  help,
+  disabled,
 }: SelectFieldProps): JSX.Element {
   return (
     <Field
       {...settingStyles.general.field}
       label={<Text {...settingStyles.general.field.label}>{label}</Text>}
+      helperText={help}
     >
       <SelectRoot
         {...settingStyles.general.select.root}
         collection={collection}
         value={value}
         onValueChange={(e) => onChange(e.value)}
+        disabled={disabled}
       >
         <SelectTrigger {...settingStyles.general.select.trigger}>
           <SelectValueText placeholder={placeholder} />
@@ -131,6 +147,7 @@ export function NumberField({
   step,
   allowMouseWheel,
   help,
+  disabled,
 }: NumberFieldProps): JSX.Element {
   return (
     <Field
@@ -150,6 +167,7 @@ export function NumberField({
         max={max}
         step={step}
         allowMouseWheel={allowMouseWheel}
+        disabled={disabled}
       >
         <NumberInput.Input {...settingStyles.common.numberInput.input} />
         <NumberInput.Control>
@@ -161,7 +179,13 @@ export function NumberField({
   );
 }
 
-export function SwitchField({ label, checked, onChange, help }: SwitchFieldProps): JSX.Element {
+export function SwitchField({
+  label,
+  checked,
+  onChange,
+  help,
+  disabled,
+}: SwitchFieldProps): JSX.Element {
   return (
     <Field
       {...settingStyles.common.field}
@@ -176,6 +200,7 @@ export function SwitchField({ label, checked, onChange, help }: SwitchFieldProps
         {...settingStyles.common.switch}
         checked={checked}
         onCheckedChange={(details) => onChange(details.checked)}
+        disabled={disabled}
       />
     </Field>
   );
@@ -187,6 +212,7 @@ export function InputField({
   onChange,
   placeholder,
   help,
+  disabled,
 }: InputFieldProps): JSX.Element {
   return (
     <Field
@@ -203,6 +229,7 @@ export function InputField({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
       />
     </Field>
   );

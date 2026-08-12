@@ -3,9 +3,9 @@ import { Box, Button, Menu } from '@chakra-ui/react';
 import {
   FiSettings, FiClock, FiPlus, FiChevronLeft, FiUsers, FiLayers
 } from 'react-icons/fi';
-import { memo } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { sidebarStyles } from './sidebar-styles';
-import SettingUI from './setting/setting-ui';
+import SettingUI, { type SettingsTabValue } from './setting/setting-ui';
 import ChatHistoryPanel from './chat-history-panel';
 import BottomTab from './bottom-tab';
 import HistoryDrawer from './history-drawer';
@@ -17,6 +17,8 @@ import { ModeType } from '@/context/mode-context';
 interface SidebarProps {
   isCollapsed?: boolean
   onToggle: () => void
+  width: number
+  onWidthChange: (nextWidth: number) => void
 }
 
 interface HeaderButtonsProps {
@@ -135,7 +137,12 @@ const SidebarContent = memo(({
 SidebarContent.displayName = 'SidebarContent';
 
 // Main component
-function Sidebar({ isCollapsed = false, onToggle }: SidebarProps): JSX.Element {
+function Sidebar({
+  isCollapsed = false,
+  onToggle,
+  width,
+  onWidthChange,
+}: SidebarProps): JSX.Element {
   const {
     settingsOpen,
     onSettingsOpen,
@@ -145,9 +152,85 @@ function Sidebar({ isCollapsed = false, onToggle }: SidebarProps): JSX.Element {
     currentMode,
     isElectron,
   } = useSidebar();
+  const [settingsActiveTab, setSettingsActiveTab] = useState<SettingsTabValue>('general');
+  const dragStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startWidth: number;
+    moved: boolean;
+  } | null>(null);
+
+  const clampWidth = useCallback((value: number) => {
+    const maxWidth = Math.max(420, Math.min(1200, window.innerWidth - 120));
+    return Math.max(420, Math.min(maxWidth, Math.round(value)));
+  }, []);
+
+  const handleResizePointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (isCollapsed || window.innerWidth < 768) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startWidth: width,
+      moved: false,
+    };
+
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+  }, [isCollapsed, width]);
+
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      const dragState = dragStateRef.current;
+      if (!dragState || event.pointerId !== dragState.pointerId) {
+        return;
+      }
+
+      const deltaX = event.clientX - dragState.startX;
+      if (Math.abs(deltaX) > 2) {
+        dragState.moved = true;
+      }
+      onWidthChange(clampWidth(dragState.startWidth + deltaX));
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      const dragState = dragStateRef.current;
+      if (!dragState || event.pointerId !== dragState.pointerId) {
+        return;
+      }
+
+      dragStateRef.current = null;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [clampWidth, onWidthChange]);
 
   return (
-    <Box {...sidebarStyles.sidebar.container(isCollapsed)}>
+    <Box {...sidebarStyles.sidebar.container(isCollapsed, width)}>
+      {!isCollapsed && (
+        <Box
+          aria-label="Resize sidebar"
+          {...sidebarStyles.sidebar.resizeHandle}
+          onPointerDown={handleResizePointerDown}
+        />
+      )}
       <ToggleButton isCollapsed={isCollapsed} onToggle={onToggle} />
 
       {!isCollapsed && !settingsOpen && (
@@ -160,11 +243,14 @@ function Sidebar({ isCollapsed = false, onToggle }: SidebarProps): JSX.Element {
         />
       )}
 
-      {!isCollapsed && settingsOpen && (
+      {!isCollapsed && (
         <SettingUI
           open={settingsOpen}
           onClose={onSettingsClose}
           onToggle={onToggle}
+          drawerWidth={width}
+          activeTab={settingsActiveTab}
+          onActiveTabChange={setSettingsActiveTab}
         />
       )}
     </Box>

@@ -6,6 +6,7 @@ interface FooterStyles {
   actionButton: SystemStyleObject
   input: SystemStyleObject
   attachButton: SystemStyleObject
+  attachBadge: SystemStyleObject
 }
 
 interface AIIndicatorStyles {
@@ -81,6 +82,24 @@ export const footerStyles: {
         bg: 'transparent',
         color: 'white',
       },
+    },
+    attachBadge: {
+      position: 'absolute',
+      top: '10px',
+      left: '34px',
+      minW: '18px',
+      height: '18px',
+      px: '1',
+      borderRadius: 'full',
+      bg: 'blue.500',
+      color: 'white',
+      fontSize: '11px',
+      fontWeight: '700',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3,
+      pointerEvents: 'none',
     },
   },
   aiIndicator: {

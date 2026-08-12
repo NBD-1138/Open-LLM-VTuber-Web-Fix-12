@@ -3,7 +3,7 @@
 /* eslint-disable no-use-before-define */
 import { Subject } from 'rxjs';
 import { ModelInfo } from '@/context/live2d-config-context';
-import { HistoryInfo } from '@/context/websocket-context';
+import { HistoryInfo, TwitchServiceStatus } from '@/context/websocket-context';
 import { ConfigFile } from '@/context/character-config-context';
 import { toaster } from '@/components/ui/toaster';
 
@@ -25,6 +25,8 @@ export interface AudioPayload {
   slice_length?: number;
   display_text?: DisplayText;
   actions?: Actions;
+  mime_type?: string;
+  automation_request_id?: string;
 }
 
 export interface Message {
@@ -49,10 +51,10 @@ export interface Actions {
 }
 
 export interface MessageEvent {
-  tool_id: any;
-  tool_name: any;
-  name: any;
-  status: any;
+  tool_id?: string;
+  tool_name?: string;
+  name?: string;
+  status?: 'running' | 'completed' | 'error' | TwitchServiceStatus;
   content: string;
   timestamp: string;
   type: string;
@@ -61,6 +63,7 @@ export interface MessageEvent {
   slice_length?: number;
   files?: BackgroundFile[];
   actions?: Actions;
+  mime_type?: string;
   text?: string;
   model_info?: ModelInfo;
   conf_name?: string;
@@ -77,6 +80,92 @@ export interface MessageEvent {
   client_uid?: string;
   forwarded?: boolean;
   display_text?: DisplayText;
+  automation_request_id?: string;
+  enabled?: boolean;
+  authenticated?: boolean;
+  channel?: string;
+  broadcaster_id?: string;
+  talkback_enabled?: boolean;
+  read_chat_aloud?: boolean;
+  chat_tts_volume?: number;
+  notify_subscriptions?: boolean;
+  notify_first_observed_chatters?: boolean;
+  first_observed_chatter_viewer_threshold?: number;
+  redemptions_enabled?: boolean;
+  self_moderation_enabled?: boolean;
+  debug?: boolean;
+  restart_required_fields?: string[];
+  reauth_available?: boolean;
+  auth_flow_pending?: boolean;
+  oauth_redirect_uri?: string;
+  token_storage?: string;
+  detail?: string | null;
+  request_id?: string;
+  profile_id?: string;
+  command_id?: string;
+  source?: string;
+  category?: string;
+  metadata?: Record<string, unknown>;
+  payload?: Record<string, unknown>;
+  variables?: Record<string, string>;
+  duration_ms?: number;
+  error?: string | null;
+  emergency_stopped?: boolean;
+  active_profile_id?: string | null;
+  running_requests?: string[];
+  revision?: number;
+  capability_revision?: number;
+  action?: 'confirm' | 'reject';
+  settings?: Record<string, unknown>;
+  capabilities?: Array<{
+    profile_id: string;
+    command_id: string;
+    label: string;
+    description: string;
+    category: string;
+    enabled: boolean;
+    available: boolean;
+    risk: string;
+    autonomy_policy: string;
+    allowed_trigger_sources: string[];
+    cooldown_remaining_ms: number;
+    llm_access?: string;
+    blocked_reason?: string | null;
+  }>;
+  pending_confirmations?: Array<{
+    request_id: string;
+    profile_id: string;
+    command_id: string;
+    command_label: string;
+    concise_reason: string;
+    risk: string;
+    created_at: string;
+    expires_at: string;
+    source: string;
+  }>;
+  recent_decisions?: Array<{
+    decision_id: string;
+    decision_type: string;
+    profile_id: string | null;
+    command_id: string | null;
+    command_label: string | null;
+    reason: string | null;
+    risk: string | null;
+    blocked_reason: string | null;
+    request_id: string | null;
+    created_at: string;
+  }>;
+  last_blocked_reason?: string | null;
+  profiles?: Array<{
+    profile_id: string;
+    display_name: string;
+    enabled: boolean;
+    commands: Array<{
+      command_id: string;
+      label: string;
+      enabled: boolean;
+    }>;
+  }>;
   live2d_model?: string;
   browser_view?: {
     debuggerFullscreenUrl: string;
@@ -116,6 +205,8 @@ class WebSocketService {
 
   private currentState: 'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED' = 'CLOSED';
 
+  private currentUrl: string | null = null;
+
   static getInstance() {
     if (!WebSocketService.instance) {
       WebSocketService.instance = new WebSocketService();
@@ -138,14 +229,29 @@ class WebSocketService {
     });
   }
 
-  connect(url: string) {
-    if (this.ws?.readyState === WebSocket.CONNECTING ||
-        this.ws?.readyState === WebSocket.OPEN) {
+  connect(url: string, force = false) {
+    if (
+      !force
+      && this.ws
+      && this.currentUrl === url
+      && (
+        this.ws.readyState === WebSocket.CONNECTING
+        || this.ws.readyState === WebSocket.OPEN
+      )
+    ) {
+      return;
+    }
+
+    if (
+      this.ws?.readyState === WebSocket.CONNECTING
+      || this.ws?.readyState === WebSocket.OPEN
+    ) {
       this.disconnect();
     }
 
     try {
       this.ws = new WebSocket(url);
+      this.currentUrl = url;
       this.currentState = 'CONNECTING';
       this.stateSubject.next('CONNECTING');
 
@@ -170,11 +276,13 @@ class WebSocketService {
       };
 
       this.ws.onclose = () => {
+        this.currentUrl = null;
         this.currentState = 'CLOSED';
         this.stateSubject.next('CLOSED');
       };
 
       this.ws.onerror = () => {
+        this.currentUrl = null;
         this.currentState = 'CLOSED';
         this.stateSubject.next('CLOSED');
       };
@@ -207,8 +315,13 @@ class WebSocketService {
   }
 
   disconnect() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.currentState = 'CLOSING';
+      this.stateSubject.next('CLOSING');
+    }
     this.ws?.close();
     this.ws = null;
+    this.currentUrl = null;
   }
 
   getCurrentState() {

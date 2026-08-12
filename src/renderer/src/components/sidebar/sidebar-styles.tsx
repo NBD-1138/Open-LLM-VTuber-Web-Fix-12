@@ -32,12 +32,12 @@ const commonStyles = {
 
 export const sidebarStyles = {
   sidebar: {
-    container: (isCollapsed: boolean) => ({
+    container: (isCollapsed: boolean, width: number) => ({
       position: 'absolute' as const,
       left: 0,
       top: 0,
       height: '100%',
-      width: '440px',
+      width: `${width}px`,
       bg: 'gray.900',
       transform: isCollapsed
         ? 'translateX(calc(-100% + 24px))'
@@ -49,6 +49,23 @@ export const sidebarStyles = {
       overflow: isCollapsed ? 'visible' : 'hidden',
       pb: '4',
     }),
+    resizeHandle: {
+      position: 'absolute' as const,
+      top: 0,
+      right: '24px',
+      width: '10px',
+      height: '100%',
+      cursor: 'ew-resize',
+      zIndex: 2,
+      display: { base: 'none', md: 'block' },
+      transition: 'background-color 0.2s ease',
+      _hover: {
+        bg: 'whiteAlpha.100',
+      },
+      _active: {
+        bg: 'blue.400',
+      },
+    },
     toggleButton: {
       position: 'absolute',
       right: 0,

@@ -1,5 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import {
+  Box,
   Tabs,
   Button,
   DrawerRoot,
@@ -22,18 +23,38 @@ import ASR from './asr';
 import TTS from './tts';
 import Agent from './agent';
 import About from './about';
+import Twitch from './twitch';
+import Assistant from './assistant';
+
+export type SettingsTabValue =
+  | 'general'
+  | 'live2d'
+  | 'asr'
+  | 'tts'
+  | 'agent'
+  | 'twitch'
+  | 'about'
+  | 'assistant';
 
 interface SettingUIProps {
   open: boolean;
   onClose: () => void;
   onToggle: () => void;
+  drawerWidth: number;
+  activeTab: SettingsTabValue;
+  onActiveTabChange: (tab: SettingsTabValue) => void;
 }
 
-function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
+function SettingUI({
+  open,
+  onClose,
+  drawerWidth,
+  activeTab,
+  onActiveTabChange,
+}: SettingUIProps): JSX.Element {
   const { t } = useTranslation();
   const [saveHandlers, setSaveHandlers] = useState<(() => void)[]>([]);
   const [cancelHandlers, setCancelHandlers] = useState<(() => void)[]>([]);
-  const [activeTab, setActiveTab] = useState('general');
 
   const handleSaveCallback = useCallback((handler: () => void) => {
     setSaveHandlers((prev) => [...prev, handler]);
@@ -78,7 +99,7 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
           <ASR onSave={handleSaveCallback} onCancel={handleCancelCallback} />
         </Tabs.Content>
         <Tabs.Content value="tts" {...settingStyles.settingUI.tabs.content}>
-          <TTS />
+          <TTS onSave={handleSaveCallback} onCancel={handleCancelCallback} />
         </Tabs.Content>
         <Tabs.Content value="agent" {...settingStyles.settingUI.tabs.content}>
           <Agent
@@ -86,8 +107,17 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
             onCancel={handleCancelCallback}
           />
         </Tabs.Content>
+        <Tabs.Content value="twitch" {...settingStyles.settingUI.tabs.content}>
+          <Twitch />
+        </Tabs.Content>
         <Tabs.Content value="about" {...settingStyles.settingUI.tabs.content}>
           <About />
+        </Tabs.Content>
+        <Tabs.Content value="assistant" {...settingStyles.settingUI.tabs.content}>
+          <Assistant
+            onSave={handleSaveCallback}
+            onCancel={handleCancelCallback}
+          />
         </Tabs.Content>
       </Tabs.ContentGroup>
     ),
@@ -97,27 +127,37 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
   return (
     <DrawerRoot
       open={open}
+      lazyMount={false}
+      unmountOnExit={false}
       onOpenChange={(e) => (e.open ? null : onClose())}
       placement="start"
     >
       <DrawerBackdrop />
-      <DrawerContent {...settingStyles.settingUI.drawerContent}>
+      <DrawerContent
+        {...settingStyles.settingUI.drawerContent}
+        width={`${drawerWidth}px`}
+        maxWidth={`min(95vw, ${drawerWidth}px)`}
+      >
         <DrawerHeader {...settingStyles.settingUI.drawerHeader}>
           <DrawerTitle {...settingStyles.settingUI.drawerTitle}>
             {t('common.settings')}
           </DrawerTitle>
           <div {...settingStyles.settingUI.closeButton}>
-            <DrawerCloseTrigger asChild onClick={handleCancel}>
+            <DrawerCloseTrigger asChild>
               <CloseButton size="sm" color="white" />
             </DrawerCloseTrigger>
           </div>
         </DrawerHeader>
 
-        <DrawerBody>
+        <DrawerBody
+          display="flex"
+          flexDirection="column"
+          overflow="hidden"
+          minH={0}
+        >
           <Tabs.Root
-            defaultValue="general"
             value={activeTab}
-            onValueChange={(details) => setActiveTab(details.value)}
+            onValueChange={(details) => onActiveTabChange(details.value as SettingsTabValue)}
             {...settingStyles.settingUI.tabs.root}
           >
             <Tabs.List {...settingStyles.settingUI.tabs.list}>
@@ -152,14 +192,36 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
                 {t('settings.tabs.agent')}
               </Tabs.Trigger>
               <Tabs.Trigger
+                value="twitch"
+                {...settingStyles.settingUI.tabs.trigger}
+              >
+                {t('settings.tabs.twitch')}
+              </Tabs.Trigger>
+              <Tabs.Trigger
                 value="about"
                 {...settingStyles.settingUI.tabs.trigger}
               >
                 {t('settings.tabs.about')}
               </Tabs.Trigger>
+              <Tabs.Trigger
+                value="assistant"
+                {...settingStyles.settingUI.tabs.trigger}
+              >
+                {t('settings.tabs.assistant')}
+              </Tabs.Trigger>
             </Tabs.List>
 
-            {tabsContent}
+            <Box
+              width="100%"
+              minW={0}
+              flex="1"
+              minH={0}
+              overflowY="auto"
+              overflowX="hidden"
+              css={settingStyles.settingUI.container.css}
+            >
+              {tabsContent}
+            </Box>
           </Tabs.Root>
         </DrawerBody>
 

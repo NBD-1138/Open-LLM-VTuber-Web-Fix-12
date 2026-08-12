@@ -71,6 +71,11 @@ enum LoadStep {
   CompleteSetup,
 }
 
+const DefaultMaskClipCapacity = 36;
+const MultiRenderTextureMaskCapacity = 32;
+const DefaultClippingMaskBufferSize = 256;
+const DetailedClippingMaskBufferSize = 1024;
+
 /**
  * ユーザーが実際に使用するモデルの実装クラス<br>
  * モデル生成、機能コンポーネント生成、更新処理とレンダリングの呼び出しを行う。
@@ -448,7 +453,7 @@ export class LAppModel extends CubismUserModel {
         this._updating = false;
         this._initialized = true;
 
-        this.createRenderer();
+        this.createConfiguredRenderer();
         this.setupTextures();
         this.getRenderer().startUp(gl);
         return;
@@ -469,7 +474,7 @@ export class LAppModel extends CubismUserModel {
         this._updating = false;
         this._initialized = true;
 
-        this.createRenderer();
+        this.createConfiguredRenderer();
         this.setupTextures();
         this.getRenderer().startUp(gl);
       }
@@ -533,8 +538,79 @@ export class LAppModel extends CubismUserModel {
    */
   public reloadRenderer(): void {
     this.deleteRenderer();
-    this.createRenderer();
+    this.createConfiguredRenderer();
     this.setupTextures();
+  }
+
+  private createConfiguredRenderer(): void {
+    const model = this.getModel();
+    const usesMasking = Boolean(model && model.isUsingMasking());
+    const renderTextureCount = usesMasking
+      ? Math.max(2, this.getRecommendedMaskRenderTextureCount())
+      : 1;
+
+    this.createRenderer(renderTextureCount);
+
+    const renderer = this.getRenderer();
+    if (!renderer || !usesMasking) {
+      return;
+    }
+
+    const clippingGroupCount = this.getUniqueClippingGroupCount();
+    const bufferSize = DetailedClippingMaskBufferSize;
+
+    renderer.setClippingMaskBufferSize(bufferSize);
+    renderer.useHighPrecisionMask(
+      clippingGroupCount > DefaultMaskClipCapacity || renderTextureCount > 1
+    );
+
+    if (
+      LAppDefine.DebugLogEnable &&
+      (renderTextureCount > 1 ||
+        bufferSize > DefaultClippingMaskBufferSize ||
+        clippingGroupCount > DefaultMaskClipCapacity)
+    ) {
+      console.log(
+        `[APP] Live2D mask config: groups=${clippingGroupCount}, renderTextures=${renderTextureCount}, bufferSize=${bufferSize}`
+      );
+    }
+  }
+
+  private getRecommendedMaskRenderTextureCount(): number {
+    const clippingGroupCount = this.getUniqueClippingGroupCount();
+    if (clippingGroupCount <= DefaultMaskClipCapacity) {
+      return 1;
+    }
+
+    return Math.max(
+      1,
+      Math.ceil(clippingGroupCount / MultiRenderTextureMaskCapacity)
+    );
+  }
+
+  private getUniqueClippingGroupCount(): number {
+    const model = this.getModel();
+    if (!model || !model.isUsingMasking()) {
+      return 0;
+    }
+
+    const drawableMasks = model.getDrawableMasks();
+    const drawableMaskCounts = model.getDrawableMaskCounts();
+    const clippingGroups = new Set<string>();
+
+    for (let i = 0; i < drawableMaskCounts.length; i++) {
+      const maskCount = drawableMaskCounts[i];
+      if (maskCount <= 0) {
+        continue;
+      }
+
+      const maskIds = Array.from(drawableMasks[i].slice(0, maskCount)).sort(
+        (left, right) => left - right
+      );
+      clippingGroups.add(maskIds.join(","));
+    }
+
+    return clippingGroups.size;
   }
 
   /**
@@ -971,7 +1047,7 @@ export class LAppModel extends CubismUserModel {
               this._updating = false;
               this._initialized = true;
 
-              this.createRenderer();
+              this.createConfiguredRenderer();
               this.setupTextures();
               this.getRenderer().startUp(gl);
             }

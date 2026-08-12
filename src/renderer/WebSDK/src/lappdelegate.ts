@@ -5,33 +5,31 @@
  * that can be found at https://www.live2d.com/eula/live2d-open-software-license-agreement_en.html.
  */
 
-import { CubismFramework, Option } from '@framework/live2dcubismframework';
+import { CubismFramework, Option } from "@framework/live2dcubismframework";
 
-import * as LAppDefine from './lappdefine';
-import { LAppLive2DManager } from './lapplive2dmanager';
-import { LAppPal } from './lapppal';
-import { LAppTextureManager } from './lapptexturemanager';
-import { LAppView } from './lappview';
-import { canvas, gl } from './lappglmanager';
+import * as LAppDefine from "./lappdefine";
+import { LAppLive2DManager } from "./lapplive2dmanager";
+import { LAppPal } from "./lapppal";
+import { LAppTextureManager } from "./lapptexturemanager";
+import { LAppView } from "./lappview";
+import { canvas, gl } from "./lappglmanager";
 
 export let s_instance: LAppDelegate | null = null;
 export let frameBuffer: WebGLFramebuffer | null = null;
 
-
-
 /**
  * アプリケーションクラス。
  * Cubism SDKの管理を行う。
- * 
+ *
  * 应用程序类。
  * 管理Cubism SDK。
- * 
+ *
  */
 export class LAppDelegate {
   /**
    * クラスのインスタンス（シングルトン）を返す。
    * インスタンスが生成されていない場合は内部でインスタンスを生成する。
-   * 
+   *
    * 返回类的实例（单例）。
    * 如果尚未创建实例，则在内部创建实例。
    *
@@ -47,9 +45,9 @@ export class LAppDelegate {
 
   /**
    * クラスのインスタンス（シングルトン）を解放する。
-   * 
+   *
    * 释放类的实例（单例）。
-   * 
+   *
    */
   public static releaseInstance(): void {
     if (s_instance != null) {
@@ -71,7 +69,7 @@ export class LAppDelegate {
     //   document.body.appendChild(canvas!);
     // }
 
-    if (LAppDefine.CanvasSize === 'auto') {
+    if (LAppDefine.CanvasSize === "auto") {
       this._resizeCanvas();
     } else {
       canvas!.width = LAppDefine.CanvasSize.width;
@@ -87,21 +85,21 @@ export class LAppDelegate {
     gl!.enable(gl!.BLEND);
     gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE_MINUS_SRC_ALPHA);
 
-    const supportTouch: boolean = 'ontouchend' in canvas!;
+    const supportTouch: boolean = "ontouchend" in canvas!;
 
     if (supportTouch) {
       // タッチ関連コールバック関数登録
       // 注册触摸相关回调函数
-      canvas!.addEventListener('touchstart', onTouchBegan, { passive: true });
-      canvas!.addEventListener('touchmove', onTouchMoved, { passive: true });
-      canvas!.addEventListener('touchend', onTouchEnded, { passive: true });
-      canvas!.addEventListener('touchcancel', onTouchCancel, { passive: true });
+      canvas!.addEventListener("touchstart", onTouchBegan, { passive: true });
+      canvas!.addEventListener("touchmove", onTouchMoved, { passive: true });
+      canvas!.addEventListener("touchend", onTouchEnded, { passive: true });
+      canvas!.addEventListener("touchcancel", onTouchCancel, { passive: true });
     } else {
       // マウス関連コールバック関数登録
       // 注册鼠标相关回调函数
-      canvas!.addEventListener('mousedown', onClickBegan, { passive: true });
-      canvas!.addEventListener('mousemove', onMouseMoved, { passive: true });
-      canvas!.addEventListener('mouseup', onClickEnded, { passive: true });
+      canvas!.addEventListener("mousedown", onClickBegan, { passive: true });
+      canvas!.addEventListener("mousemove", onMouseMoved, { passive: true });
+      canvas!.addEventListener("mouseup", onClickEnded, { passive: true });
     }
 
     // AppViewの初期化
@@ -118,29 +116,11 @@ export class LAppDelegate {
    */
   public onResize(): void {
     this._resizeCanvas();
-    
+
     // Ensure view is properly initialized
     if (this._view && canvas) {
       this._view.initialize();
       this._view.initializeSprite();
-      
-      // Try to get and center the model
-      const manager = LAppLive2DManager.getInstance();
-      if (manager) {
-        const model = manager.getModel(0);
-        if (model) {
-          // Keep model centered in canvas
-          const width = canvas!.width;
-          const height = canvas!.height;
-          if (width > 0 && height > 0) {
-            // @ts-ignore
-            if (model.setPosition) {
-              // @ts-ignore
-              model.setPosition(width / 2, height / 2);
-            }
-          }
-        }
-      }
     }
   }
 
@@ -186,7 +166,6 @@ export class LAppDelegate {
 
       LAppPal.updateTime(true);
 
-
       // 画面の初期化
       // 屏幕初始化
       gl!.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -230,20 +209,20 @@ export class LAppDelegate {
     const vertexShaderId = gl!.createShader(gl!.VERTEX_SHADER);
 
     if (vertexShaderId == null) {
-      LAppPal.printMessage('failed to create vertexShader');
+      LAppPal.printMessage("failed to create vertexShader");
       return null;
     }
 
     const vertexShader: string =
-      'precision mediump float;' +
-      'attribute vec3 position;' +
-      'attribute vec2 uv;' +
-      'varying vec2 vuv;' +
-      'void main(void)' +
-      '{' +
-      '   gl_Position = vec4(position, 1.0);' +
-      '   vuv = uv;' +
-      '}';
+      "precision mediump float;" +
+      "attribute vec3 position;" +
+      "attribute vec2 uv;" +
+      "varying vec2 vuv;" +
+      "void main(void)" +
+      "{" +
+      "   gl_Position = vec4(position, 1.0);" +
+      "   vuv = uv;" +
+      "}";
 
     gl!.shaderSource(vertexShaderId, vertexShader);
     gl!.compileShader(vertexShaderId);
@@ -252,18 +231,18 @@ export class LAppDelegate {
     const fragmentShaderId = gl!.createShader(gl!.FRAGMENT_SHADER);
 
     if (fragmentShaderId == null) {
-      LAppPal.printMessage('failed to create fragmentShader');
+      LAppPal.printMessage("failed to create fragmentShader");
       return null;
     }
 
     const fragmentShader: string =
-      'precision mediump float;' +
-      'varying vec2 vuv;' +
-      'uniform sampler2D texture;' +
-      'void main(void)' +
-      '{' +
-      '   gl_FragColor = texture2D(texture, vuv);' +
-      '}';
+      "precision mediump float;" +
+      "varying vec2 vuv;" +
+      "uniform sampler2D texture;" +
+      "void main(void)" +
+      "{" +
+      "   gl_FragColor = texture2D(texture, vuv);" +
+      "}";
 
     gl!.shaderSource(fragmentShaderId, fragmentShader);
     gl!.compileShader(fragmentShaderId);
@@ -362,7 +341,7 @@ export class LAppDelegate {
  */
 function onClickBegan(e: MouseEvent): void {
   if (!LAppDelegate.getInstance()._view) {
-    LAppPal.printMessage('view notfound');
+    LAppPal.printMessage("view notfound");
     return;
   }
   LAppDelegate.getInstance()._captured = true;
@@ -382,7 +361,7 @@ function onMouseMoved(e: MouseEvent): void {
   }
 
   if (!LAppDelegate.getInstance()._view) {
-    LAppPal.printMessage('view notfound');
+    LAppPal.printMessage("view notfound");
     return;
   }
 
@@ -399,7 +378,7 @@ function onMouseMoved(e: MouseEvent): void {
 function onClickEnded(e: MouseEvent): void {
   LAppDelegate.getInstance()._captured = false;
   if (!LAppDelegate.getInstance()._view) {
-    LAppPal.printMessage('view notfound');
+    LAppPal.printMessage("view notfound");
     return;
   }
 
@@ -415,7 +394,7 @@ function onClickEnded(e: MouseEvent): void {
  */
 function onTouchBegan(e: TouchEvent): void {
   if (!LAppDelegate.getInstance()._view) {
-    LAppPal.printMessage('view notfound');
+    LAppPal.printMessage("view notfound");
     return;
   }
 
@@ -436,7 +415,7 @@ function onTouchMoved(e: TouchEvent): void {
   }
 
   if (!LAppDelegate.getInstance()._view) {
-    LAppPal.printMessage('view notfound');
+    LAppPal.printMessage("view notfound");
     return;
   }
 
@@ -455,7 +434,7 @@ function onTouchEnded(e: TouchEvent): void {
   LAppDelegate.getInstance()._captured = false;
 
   if (!LAppDelegate.getInstance()._view) {
-    LAppPal.printMessage('view notfound');
+    LAppPal.printMessage("view notfound");
     return;
   }
 
@@ -474,7 +453,7 @@ function onTouchCancel(e: TouchEvent): void {
   LAppDelegate.getInstance()._captured = false;
 
   if (!LAppDelegate.getInstance()._view) {
-    LAppPal.printMessage('view notfound');
+    LAppPal.printMessage("view notfound");
     return;
   }
 

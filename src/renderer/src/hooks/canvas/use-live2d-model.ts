@@ -10,10 +10,13 @@ import { updateModelConfig } from '../../../WebSDK/src/lappdefine';
 import { LAppDelegate } from '../../../WebSDK/src/lappdelegate';
 import { initializeLive2D } from '@cubismsdksamples/main';
 import { useMode } from '@/context/mode-context';
+import { itemsRuntime } from '@/services/items/items-runtime';
+import { modelToCanvasPosition } from '@/utils/live2d-coords';
 
 interface UseLive2DModelProps {
   modelInfo: ModelInfo | undefined;
   canvasRef: RefObject<HTMLCanvasElement>;
+  allowAvatarInteraction?: boolean;
 }
 
 interface Position {
@@ -91,6 +94,7 @@ export const playAudioWithLipSync = (audioPath: string, modelIndex = 0): Promise
 export const useLive2DModel = ({
   modelInfo,
   canvasRef,
+  allowAvatarInteraction = true,
 }: UseLive2DModelProps) => {
   const { mode } = useMode();
   const isPet = mode === 'pet';
@@ -102,6 +106,7 @@ export const useLive2DModel = ({
   const prevModelUrlRef = useRef<string | null>(null);
   const isHoveringModelRef = useRef(false);
   const electronApi = (window as any).electron;
+  const dragMovedRef = useRef<boolean>(false);
 
   // --- State for Tap vs Drag ---
   const mouseDownTimeRef = useRef<number>(0);
@@ -168,15 +173,29 @@ export const useLive2DModel = ({
 
         model._modelMatrix.setMatrix(newMatrix);
         modelPositionRef.current = { x, y };
+        const canvasPosition = modelToCanvasPosition({ x, y }, canvasRef.current ?? undefined);
+        const scaleFactor =
+          typeof model._modelMatrix.getScaleX === "function"
+            ? model._modelMatrix.getScaleX()
+            : model?._modelMatrix?._tr?.[0] ?? 1;
+        itemsRuntime.setAvatarTransform(canvasPosition, scaleFactor);
       }
     }
-  }, []);
+  }, [canvasRef]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       const currentPos = getModelPosition();
       modelPositionRef.current = currentPos;
       setPosition(currentPos);
+      const adapter = (window as any).getLAppAdapter?.();
+      const baseModel = adapter?.getModel();
+      const scale =
+        typeof baseModel?._modelMatrix?.getScaleX === "function"
+          ? baseModel?._modelMatrix.getScaleX()
+          : baseModel?._modelMatrix?._tr?.[0] ?? 1;
+      const canvasPosition = modelToCanvasPosition(currentPos, canvasRef.current ?? undefined);
+      itemsRuntime.setAvatarTransform(canvasPosition, scale);
     }, 500);
 
     return () => clearTimeout(timer);
@@ -203,6 +222,8 @@ export const useLive2DModel = ({
   }, [getCanvasScale]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!allowAvatarInteraction) return;
+
     const adapter = (window as any).getLAppAdapter?.();
     if (!adapter || !canvasRef.current) return;
 
@@ -210,65 +231,32 @@ export const useLive2DModel = ({
     const view = LAppDelegate.getInstance().getView();
     if (!view || !model) return;
 
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left; // Screen X relative to canvas
-    const y = e.clientY - rect.top; // Screen Y relative to canvas
+    mouseDownTimeRef.current = Date.now();
+    mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
+    isPotentialTapRef.current = true;
+    dragMovedRef.current = false;
+    setIsDragging(true);
 
-    // --- Check if click is on model ---
-    const scale = canvas.width / canvas.clientWidth;
-    const scaledX = x * scale;
-    const scaledY = y * scale;
-    const modelX = view._deviceToScreen.transformX(scaledX);
-    const modelY = view._deviceToScreen.transformY(scaledY);
-
-    const hitAreaName = model.anyhitTest(modelX, modelY);
-    const isHitOnModel = model.isHitOnModel(modelX, modelY);
-    // --- End Check ---
-
-    if (hitAreaName !== null || isHitOnModel) {
-      // Record potential tap/drag start
-      mouseDownTimeRef.current = Date.now();
-      mouseDownPosRef.current = { x: e.clientX, y: e.clientY }; // Use clientX/Y for distance check
-      isPotentialTapRef.current = true;
-      setIsDragging(false); // Ensure dragging is false initially
-
-      // Store initial model position IF drag starts later
-      if (model._modelMatrix) {
-        const matrix = model._modelMatrix.getArray();
-        modelStartPos.current = { x: matrix[12], y: matrix[13] };
-      }
+    if (canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      dragStartPos.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
     }
-  }, [canvasRef, modelInfo]);
+
+    if (model._modelMatrix) {
+      const matrix = model._modelMatrix.getArray();
+      modelStartPos.current = { x: matrix[12], y: matrix[13] };
+    }
+  }, [canvasRef, allowAvatarInteraction]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!allowAvatarInteraction) return;
+
     const adapter = (window as any).getLAppAdapter?.();
     const view = LAppDelegate.getInstance().getView();
     const model = adapter?.getModel();
-
-    // --- Start Drag Logic ---
-    if (isPotentialTapRef.current && adapter && view && model && canvasRef.current) {
-      const timeElapsed = Date.now() - mouseDownTimeRef.current;
-      const deltaX = e.clientX - mouseDownPosRef.current.x;
-      const deltaY = e.clientY - mouseDownPosRef.current.y;
-      const distanceMoved = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-      // Check if it's a drag (moved enough distance OR held long enough while moving slightly)
-      if (distanceMoved > DRAG_DISTANCE_THRESHOLD_PX || (timeElapsed > TAP_DURATION_THRESHOLD_MS && distanceMoved > 1)) {
-        isPotentialTapRef.current = false; // It's a drag, not a tap
-        setIsDragging(true);
-
-        // Set initial drag screen position using the position from mousedown
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        dragStartPos.current = {
-          x: mouseDownPosRef.current.x - rect.left,
-          y: mouseDownPosRef.current.y - rect.top,
-        };
-        // modelStartPos is already set in handleMouseDown
-      }
-    }
-    // --- End Start Drag Logic ---
 
     // --- Continue Drag Logic ---
     if (isDragging && adapter && view && model && canvasRef.current) {
@@ -294,6 +282,9 @@ export const useLive2DModel = ({
 
       const newX = modelStartPos.current.x + dx;
       const newY = modelStartPos.current.y + dy;
+      if (!dragMovedRef.current && (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5)) {
+        dragMovedRef.current = true;
+      }
 
       // Use the adapter's setModelPosition method if available, otherwise update matrix directly
       if (adapter.setModelPosition) {
@@ -308,6 +299,12 @@ export const useLive2DModel = ({
 
       modelPositionRef.current = { x: newX, y: newY };
       setPosition({ x: newX, y: newY }); // Update React state if needed for UI feedback
+      const canvasPosition = modelToCanvasPosition({ x: newX, y: newY }, canvasRef.current ?? undefined);
+      const scaleFactor =
+        typeof model?._modelMatrix?.getScaleX === "function"
+          ? model._modelMatrix.getScaleX()
+          : model?._modelMatrix?._tr?.[0] ?? 1;
+      itemsRuntime.setAvatarTransform(canvasPosition, scaleFactor);
     }
     // --- End Continue Drag Logic ---
 
@@ -331,9 +328,11 @@ export const useLive2DModel = ({
       }
     }
     // --- End Pet Hover Logic ---
-  }, [isPet, isDragging, electronApi, canvasRef]);
+  }, [isPet, isDragging, electronApi, canvasRef, allowAvatarInteraction]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    if (!allowAvatarInteraction) return;
+
     const adapter = (window as any).getLAppAdapter?.();
     const model = adapter?.getModel();
     const view = LAppDelegate.getInstance().getView();
@@ -349,21 +348,28 @@ export const useLive2DModel = ({
           modelPositionRef.current = finalPos;
           modelStartPos.current = finalPos; // Update base position for next potential drag
           setPosition(finalPos);
+          const canvasPosition = modelToCanvasPosition(finalPos, canvasRef.current ?? undefined);
+          const scaleFactor =
+            typeof currentModel._modelMatrix?.getScaleX === "function"
+              ? currentModel._modelMatrix.getScaleX()
+              : currentModel._modelMatrix?._tr?.[0] ?? 1;
+          itemsRuntime.setAvatarTransform(canvasPosition, scaleFactor);
         }
       }
-    } else if (isPotentialTapRef.current && adapter && model && view && canvasRef.current) {
-      // --- Tap Motion Logic ---
+    }
+
+    const clientX = (e as any).clientX ?? mouseDownPosRef.current.x;
+    const clientY = (e as any).clientY ?? mouseDownPosRef.current.y;
+    if (adapter && model && view && canvasRef.current && isPotentialTapRef.current && !dragMovedRef.current) {
       const timeElapsed = Date.now() - mouseDownTimeRef.current;
-      const deltaX = e.clientX - mouseDownPosRef.current.x;
-      const deltaY = e.clientY - mouseDownPosRef.current.y;
+      const deltaX = clientX - mouseDownPosRef.current.x;
+      const deltaY = clientY - mouseDownPosRef.current.y;
       const distanceMoved = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-      // Check if it qualifies as a tap (short duration, minimal movement)
       if (timeElapsed < TAP_DURATION_THRESHOLD_MS && distanceMoved < DRAG_DISTANCE_THRESHOLD_PX) {
         const allowTapMotion = modelInfo?.pointerInteractive !== false;
 
         if (allowTapMotion && modelInfo?.tapMotions) {
-          // Use mouse down position for hit testing
           const canvas = canvasRef.current;
           const rect = canvas.getBoundingClientRect();
           const scale = canvas.width / canvas.clientWidth;
@@ -373,18 +379,19 @@ export const useLive2DModel = ({
           const modelY = view._deviceToScreen.transformY(downY);
 
           const hitAreaName = model.anyhitTest(modelX, modelY);
-          // Trigger tap motion using the specific hit area name or null for general body tap
           model.startTapMotion(hitAreaName, modelInfo.tapMotions);
         }
       }
-      // --- End Tap Motion Logic ---
     }
+    // --- End Tap Motion Logic ---
 
-    // Reset potential tap flag regardless of outcome
     isPotentialTapRef.current = false;
-  }, [isDragging, canvasRef, modelInfo]);
+    dragMovedRef.current = false;
+  }, [isDragging, canvasRef, modelInfo, allowAvatarInteraction]);
 
   const handleMouseLeave = useCallback(() => {
+    if (!allowAvatarInteraction) return;
+
     if (isDragging) {
       // If dragging and mouse leaves, treat it like a mouse up to end drag
       handleMouseUp({} as React.MouseEvent); // Pass a dummy event or adjust handleMouseUp signature
@@ -398,7 +405,7 @@ export const useLive2DModel = ({
       isHoveringModelRef.current = false;
       electronApi.ipcRenderer.send('update-component-hover', 'live2d-model', false);
     }
-  }, [isPet, isDragging, electronApi, handleMouseUp]);
+  }, [isPet, isDragging, electronApi, handleMouseUp, allowAvatarInteraction]);
 
   useEffect(() => {
     if (!isPet && electronApi && isHoveringModelRef.current) {

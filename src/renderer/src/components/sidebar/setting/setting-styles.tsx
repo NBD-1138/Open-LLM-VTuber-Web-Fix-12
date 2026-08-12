@@ -36,10 +36,16 @@ export const settingStyles = {
     tabs: {
       root: {
         width: '100%',
+        height: '100%',
+        minH: 0,
+        display: 'flex',
+        flexDirection: 'column' as const,
         variant: 'plain' as const,
         colorPalette: 'gray',
       },
-      content: {},
+      content: {
+        width: '100%',
+      },
       trigger: {
         color: 'whiteAlpha.600',
         _selected: {
@@ -52,11 +58,14 @@ export const settingStyles = {
       list: {
         display: 'flex',
         justifyContent: 'flex-start',
+        flexWrap: 'wrap',
+        gap: 1,
         width: '100%',
         borderBottom: '1px solid',
         borderColor: 'whiteAlpha.200',
         mb: 4,
         pl: 0,
+        flexShrink: 0,
       },
     },
     footer: {
@@ -75,6 +84,7 @@ export const settingStyles = {
       height: isElectron ? 'calc(100vh - 30px)' : '100vh',
       borderLeft: '1px solid',
       borderColor: 'whiteAlpha.200',
+      transition: 'width 0.2s ease, max-width 0.2s ease',
     },
     drawerHeader: {
       display: 'flex',
